@@ -1,86 +1,74 @@
-# Simulador de Planificación de Discos
+# Simulador de Ejercicios de E/S (UHU)
 
-Simulador interactivo y moderno para resolver problemas de planificación de discos en sistemas operativos. Implementa los algoritmos más comunes: SSTF, SCAN, LOOK, C-SCAN y F-LOOK.
+Simulador interactivo diseñado para la asignatura **"Diseño y Estructura de los Sistemas Operativos"** de la **Universidad de Huelva (UHU)**. Esta herramienta permite visualizar y calcular el rendimiento de diversos algoritmos de planificación de discos.
 
-## Características
+![Simulador Preview](/public/logoUHU.webp) *(Nota: El logo es referencial)*
 
-- ✅ **5 Algoritmos de Planificación**: SSTF, SCAN, LOOK, C-SCAN, F-LOOK
-- 📊 **Visualización Interactiva**: Gráfico del recorrido del cabezal
-- 📈 **Tabla Detallada**: Paso a paso del algoritmo
-- ⏱️ **Cálculo de Tiempos**: Búsqueda, latencia y transferencia
-- 🎨 **Interfaz Moderna**: Diseño minimalista con Tailwind CSS
-- 📱 **Responsive**: Funciona en todos los dispositivos
+## 🚀 Características
 
-## Tecnologías
+*   **Algoritmos Soportados:** Implementación completa de algoritmos clásicos y avanzados:
+    *   **SSTF** (Shortest Seek Time First)
+    *   **SCAN** (Elevator)
+    *   **C-SCAN** (Circular SCAN)
+    *   **LOOK**
+    *   **C-LOOK** (Circular LOOK)
+    *   **F-LOOK**
+    *   **SCAN-N** (N-step SCAN)
+*   **Visualización Interactiva:** Gráfico dinámico que muestra el movimiento del cabezal del disco paso a paso.
+*   **Cálculos de Tiempo:** Estimación precisa de tiempos de acceso incluyendo:
+    *   Tiempo de Búsqueda (Seek Time)
+    *   Tiempo de Latencia (Rotacional)
+    *   Tiempo de Transferencia
+*   **Simulación Avanzada:** Soporte para dirección inicial, tiempos de llegada de peticiones y configuración detallada del disco (sectores, cilindros, RPM, etc.).
 
-- **Next.js 14** - Framework React
-- **TypeScript** - Tipado estático
-- **Tailwind CSS** - Estilos modernos
-- **React** - Interfaz de usuario
+## 🛠️ Tecnologías Utilizadas
 
-## Instalación
+Este proyecto ha sido desarrollado utilizando tecnologías web modernas para asegurar rendimiento y facilidad de uso:
 
-1. Instalar dependencias:
-```bash
-npm install
-```
+*   **[Next.js](https://nextjs.org/)**: Framework de React para producción.
+*   **[TypeScript](https://www.typescriptlang.org/)**: Tipado estático robusto.
+*   **[Tailwind CSS](https://tailwindcss.com/)**: Estilizado moderno y responsivo.
+*   **Recharts**: Librería de gráficos para la visualización de pistas.
 
-2. Ejecutar en modo desarrollo:
-```bash
-npm run dev
-```
+## 📋 Requisitos Previos
 
-3. Abrir en el navegador:
-```
-http://localhost:3000
-```
+Para ejecutar este proyecto localmente, necesitas tener instalado:
 
-## Uso
+*   [Node.js](https://nodejs.org/) (versión 18 o superior recomendada)
+*   NPM (viene instalado con Node.js)
 
-1. Selecciona el algoritmo de planificación
-2. Ingresa la pista inicial
-3. Ingresa las peticiones de pistas (separadas por comas)
-4. Configura parámetros adicionales según el algoritmo
-5. Haz clic en "Calcular"
-6. Visualiza los resultados y el recorrido del cabezal
+## 🔧 Instalación y Despliegue
 
-## Ejemplo
+1.  **Clonar el repositorio (o descargar los archivos):**
+    ```bash
+    git clone <tu-repositorio>
+    cd simulador-planificacion-discos
+    ```
 
-**Problema del examen:**
-- Pista inicial: 50
-- Peticiones: 754, 433, 285, 176, 667, 827
-- Algoritmo: SSTF
+2.  **Instalar dependencias:**
+    ```bash
+    npm install
+    ```
 
-El simulador calculará automáticamente:
-- La secuencia de pistas visitadas
-- El total de pistas recorridas
-- El tiempo de acceso (si se proporcionan las especificaciones del disco)
+3.  **Ejecutar servidor de desarrollo:**
+    ```bash
+    npm run dev
+    ```
+    Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-## Algoritmos Implementados
+4.  **Compilar para producción:**
+    ```bash
+    npm run build
+    npm start
+    ```
 
-### SSTF (Shortest Seek Time First)
-Selecciona siempre la petición más cercana a la posición actual del cabezal.
+## 👨‍💻 Créditos
 
-### SCAN (Elevator)
-El cabezal se mueve en una dirección hasta el final del disco, luego invierte la dirección.
+Desarrollado por:
+**Sebastián Contreras Marín**
+Ingeniería Informática
+**Universidad de Huelva (UHU)**
+Escuela Técnica Superior de Ingeniería (ETSI)
 
-### LOOK
-Similar a SCAN pero no llega hasta el final, cambia de dirección cuando no hay más peticiones.
-
-### C-SCAN (Circular SCAN)
-Similar a SCAN pero cuando llega al final, vuelve al inicio sin procesar peticiones.
-
-### F-LOOK
-Variante de LOOK que mantiene dos colas: activa y pendiente.
-
-## Scripts Disponibles
-
-- `npm run dev` - Inicia el servidor de desarrollo
-- `npm run build` - Construye la aplicación para producción
-- `npm start` - Inicia el servidor de producción
-- `npm run lint` - Ejecuta el linter
-
-## Licencia
-
-Este proyecto es de uso educativo.
-
+---
+*Este software fue desarrollado con fines educativos para facilitar la comprensión de la gestión de entrada/salida en sistemas operativos.*
