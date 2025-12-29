@@ -44,7 +44,7 @@ export default function ResultTable({ steps, totalTracks }: ResultTableProps) {
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
                 {step.instant !== undefined ? (
-                  <span className="font-semibold text-blue-600">{step.instant}</span>
+                  <span className="font-semibold text-blue-600">{Number(step.instant.toFixed(3))}</span>
                 ) : (
                   <span className="text-gray-400">-</span>
                 )}

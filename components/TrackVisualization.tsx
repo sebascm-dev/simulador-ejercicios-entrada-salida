@@ -131,7 +131,7 @@ export default function TrackVisualization({
             <>
               {data.instante !== undefined && (
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium">Instante:</span> {data.instante}
+                  <span className="font-medium">Instante:</span> {Number(data.instante.toFixed(3))}
                 </p>
               )}
               <p className="text-sm text-gray-600">
