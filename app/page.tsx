@@ -7,6 +7,7 @@ import InputSection from '@/components/InputSection';
 import ResultTable from '@/components/ResultTable';
 import TrackVisualization from '@/components/TrackVisualization';
 import ArrivalTimeInput, { ArrivalInstance } from '@/components/ArrivalTimeInput';
+import GitHubContributors from '@/components/GitHubContributors';
 
 const DevelopmentOverlay = ({ children }: { children: React.ReactNode }) => (
   <div className="relative">
@@ -588,6 +589,7 @@ export default function Home() {
             Hecho por <span className="font-semibold text-gray-700">Sebastián Contreras Marín</span> - Universidad de Huelva (Ingeniería Informática)
           </p>
         </footer>
+        <GitHubContributors />
       </div>
     </div>
   );
