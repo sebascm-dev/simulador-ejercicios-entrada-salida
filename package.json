@@ -1,5 +1,5 @@
 {
-  "name": "simulador-planificacion-discos",
+  "name": "simulador-ejercicios-entrada-salida",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -24,4 +24,3 @@
     "typescript": "^5.2.2"
   }
 }
-
