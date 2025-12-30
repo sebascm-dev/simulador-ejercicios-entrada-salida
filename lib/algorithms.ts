@@ -1,4 +1,4 @@
-export type Algorithm = 'SSTF' | 'SCAN' | 'LOOK' | 'C-SCAN' | 'F-LOOK' | 'SCAN-N' | 'C-LOOK';
+export type Algorithm = 'SSTF' | 'SCAN' | 'LOOK' | 'C-SCAN' | 'F-LOOK' | 'SCAN-N' | 'C-LOOK' | 'F-SCAN';
 
 export interface DiskRequest {
   track: number;
@@ -647,6 +647,206 @@ export function calculateCSCAN(
   return { sequence, totalTracks, steps };
 }
 
+
+export function calculateFSCAN(
+  initialTrack: number,
+  requests: number[] | DiskRequest[],
+  maxTrack: number,
+  direction: 'asc' | 'desc' = 'asc',
+  timePerTrack: number = 1,
+  timePerRequest: number = 0,
+  minTrack: number = 0
+): AlgorithmResult {
+  const sequence: number[] = [];
+  const steps: AlgorithmStep[] = [];
+  let currentTrack = initialTrack;
+  let currentTime = 0;
+  let goingUp = direction === 'asc';
+
+  // Archivo principal de peticiones
+  const diskRequests: DiskRequest[] = Array.isArray(requests) && requests.length > 0
+    ? (typeof requests[0] === 'number'
+      ? requests.map(track => ({ track: track as number, arrivalTime: 0 }))
+      : requests as DiskRequest[])
+    : [];
+
+  let pendingArchive: DiskRequest[] = [...diskRequests].sort((a, b) => (a.arrivalTime || 0) - (b.arrivalTime || 0));
+  let bufferQueue: DiskRequest[] = []; // Cola de espera para el siguiente barrido
+  let activeQueue: DiskRequest[] = []; // Cola congelada actual
+
+  // Bucle principal: mientras haya peticiones en cualquier lugar
+  while (activeQueue.length > 0 || bufferQueue.length > 0 || pendingArchive.length > 0) {
+
+    // 1. Fase de Carga (Freeze)
+    if (activeQueue.length === 0) {
+      if (bufferQueue.length > 0) {
+        // Swap: Buffer se convierte en Active
+        activeQueue = [...bufferQueue];
+        bufferQueue = [];
+      } else if (pendingArchive.length > 0) {
+        // Si buffer vacío, verificar si hay nuevas llegadas en pendingArchive
+        // Avanzar tiempo si es necesario
+        const nextArrival = pendingArchive[0].arrivalTime || 0;
+        if (currentTime < nextArrival) {
+          currentTime = nextArrival;
+        }
+        // Cargar SOLO las que han llegado hasta currentTime (o todas las que llegan AHORA mismo si saltamos el tiempo)
+        // En F-SCAN "puro", si la máquina está ociosa, carga todo lo disponible.
+        const available = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+        if (available.length > 0) {
+          activeQueue = available;
+          pendingArchive = pendingArchive.filter(r => !available.includes(r));
+        } else {
+          // Caso raro: currentTime < nextArrival pero no avanzamos? (Ya avanzamos arriba)
+          // Si llegamos aquí es que pendingArchive tiene cosas pero en el futuro.
+          // El salto de tiempo de arriba debió cubrirlo.
+          // Pero por seguridad, si activeQueue sigue empty, force jump.
+          const forcedJump = pendingArchive[0].arrivalTime || 0;
+          currentTime = forcedJump;
+          const nowAvailable = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+          activeQueue = nowAvailable;
+          pendingArchive = pendingArchive.filter(r => !nowAvailable.includes(r));
+        }
+      } else {
+        break; // Todo vacío
+      }
+    }
+
+    // 2. Fase de Barrido (Sweep) de la Cola Activa
+    // Procesamos activeQueue HASTA QUE SE VACÍE.
+    // Durante este proceso, nuevas peticiones van a bufferQueue.
+
+    while (activeQueue.length > 0) {
+
+      // Verificar llegadas pendientes y moverlas a BUFFER (no a active)
+      const newArrivals = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+      if (newArrivals.length > 0) {
+        bufferQueue.push(...newArrivals);
+        pendingArchive = pendingArchive.filter(r => !newArrivals.includes(r));
+      }
+
+      // Lógica SCAN sobre activeQueue
+      // 0. Check current track
+      const atCurrent = activeQueue.find(r => r.track === currentTrack);
+      if (atCurrent) {
+        steps.push({
+          from: currentTrack,
+          to: currentTrack,
+          distance: 0,
+          remaining: activeQueue.map(r => r.track),
+          instant: currentTime,
+          arrivalInstant: atCurrent.arrivalTime,
+        });
+        sequence.push(currentTrack);
+        currentTime += timePerRequest;
+        activeQueue = activeQueue.filter(r => r !== atCurrent);
+        continue;
+      }
+
+      let targetTrack: number | null = null;
+      let targetRequest: DiskRequest | null = null;
+      let isEdgeMove = false;
+
+      if (goingUp) {
+        const above = activeQueue.filter(r => r.track > currentTrack).sort((a, b) => a.track - b.track);
+        if (above.length > 0) {
+          targetRequest = above[0];
+          targetTrack = targetRequest.track;
+        } else {
+          targetTrack = maxTrack;
+          isEdgeMove = true;
+        }
+      } else {
+        const below = activeQueue.filter(r => r.track < currentTrack).sort((a, b) => b.track - a.track);
+        if (below.length > 0) {
+          targetRequest = below[0];
+          targetTrack = targetRequest.track;
+        } else {
+          targetTrack = minTrack;
+          isEdgeMove = true;
+        }
+      }
+
+      // Cambio de dirección si estamos en el borde
+      if (currentTrack === targetTrack) {
+        goingUp = !goingUp;
+        continue;
+      }
+
+      // Movimiento hacia targetTrack
+      // AQUÍ ES LA CLAVE: No hay intercepción dinámica que cambie el destino. 
+      // Bueno, si una petición de activeQueue está en el camino, ¿la atendemos? 
+      // SI, SCAN atiende al paso.
+      // Pero SOLO si está en activeQueue.
+      // Find intercept in ACTIVE QUEUE
+
+      let actualDest = targetTrack;
+      // Usamos findEarliestIntercept pero pasando activeQueue en vez de pendingQueue?
+      // findEarliestIntercept está diseñado para "pendingQueue arrival logic".
+      // Aquí activeQueue ya está "arrived".
+      // Simplemente buscamos si hay alguna request en activeQueue entre current y target.
+      // Ya hemos ordenado above/below. Si targetRequest es activeQueue[0], no hay nada entre medio en activeQueue.
+      // Porque sorted by track.
+
+      // PERO: Si vamos al borde (isEdgeMove), puede haber requests en activeQueue? No, porque filtramos y no había nada.
+      // Entonces, en F-SCAN, dentro de activeQueue, siempre vamos al siguiente más cercano.
+      // NO hay intercepción de "nuevas llegadas" para cambiar el destino actual.
+      // Las nuevas van a buffer.
+
+      const distance = Math.abs(actualDest - currentTrack);
+      const moveTime = distance * timePerTrack;
+
+      // Check if new requests arrive DURING the move
+      // pendingArchive -> bufferQueue
+      // We can simulate precise arrival if we want steps to be granular, 
+      // but for visualization usually jumping to destination is fine, 
+      // assuming we catch updates at the end.
+      // However, strictly, if a request arrives at t+1 and we move for 10s, it belongs in buffer.
+      // We handle this check at top of loop, but we need to handle it occurring *during* the move time.
+
+      // Just update time and sweeping check at end of move is sufficient for queue logic,
+      // unless we want to show "arrival" animation exactly when it happens.
+      // The step visualizer uses start/end anyway.
+
+      steps.push({
+        from: currentTrack,
+        to: actualDest,
+        distance,
+        remaining: activeQueue.map(r => r.track),
+        instant: currentTime,
+        arrivalInstant: targetRequest ? targetRequest.arrivalTime : undefined
+      });
+
+      if (!isEdgeMove) {
+        sequence.push(actualDest);
+      }
+
+      currentTrack = actualDest;
+      currentTime += moveTime;
+
+      // Now that time passed, check arrivals into BUFFER
+      const arrivalsDuringMove = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+      if (arrivalsDuringMove.length > 0) {
+        bufferQueue.push(...arrivalsDuringMove);
+        pendingArchive = pendingArchive.filter(r => !arrivalsDuringMove.includes(r));
+      }
+
+      if (!isEdgeMove) {
+        currentTime += timePerRequest; // Service time
+      }
+
+      if (targetRequest && !isEdgeMove) {
+        activeQueue = activeQueue.filter(r => r !== targetRequest);
+      } else if (isEdgeMove) {
+        goingUp = !goingUp;
+      }
+    }
+  }
+
+  const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
+  return { sequence, totalTracks, steps };
+}
+
 export function calculateFLOOK(
   initialTrack: number,
   requests: DiskRequest[],
@@ -1143,6 +1343,8 @@ export function calculateAlgorithm(
       return calculateSCAN_N(initialTrack, requests as DiskRequest[], nStep, maxTrack || 999, direction, timePerTrack, timePerRequest, minTrack);
     case 'C-LOOK':
       return calculateCLOOK(initialTrack, requests as DiskRequest[], direction, timePerTrack, timePerRequest);
+    case 'F-SCAN':
+      return calculateFSCAN(initialTrack, requests, maxTrack || 999, direction, timePerTrack, timePerRequest, minTrack);
     default:
       throw new Error(`Algoritmo desconocido: ${algorithm}`);
   }

@@ -31,6 +31,8 @@ export default function Home() {
   const [maxTrack, setMaxTrack] = useState<number | ''>(0);
   const [nStep, setNStep] = useState<number | ''>(2); // N para SCAN-N
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
+  const [timePerTrack, setTimePerTrack] = useState<number | ''>(1);
+  const [timePerRequest, setTimePerRequest] = useState<number | ''>(0);
   const [result, setResult] = useState<any>(null);
 
   const handleCalculate = () => {
@@ -71,9 +73,11 @@ export default function Home() {
       const safeMinTrack = minTrack === '' ? 0 : minTrack;
       const safeMaxTrack = maxTrack === '' ? 0 : maxTrack;
       const safeNStep = nStep === '' ? 2 : nStep;
+      const safeTimePerTrack = timePerTrack === '' ? 0 : timePerTrack;
+      const safeTimePerRequest = timePerRequest === '' ? 0 : timePerRequest;
 
       // Calcular siempre pasando los diskRequests
-      algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, diskRequests, safeMaxTrack, direction, 0, 0, safeMinTrack, safeNStep);
+      algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, diskRequests, safeMaxTrack, direction, safeTimePerTrack, safeTimePerRequest, safeMinTrack, safeNStep);
 
       setResult(algorithmResult);
     } catch (error: any) {
@@ -91,6 +95,8 @@ export default function Home() {
     setMaxTrack(0);
     setNStep(2);
     setDirection('asc');
+    setTimePerTrack(1);
+    setTimePerRequest(0);
     setResult(null);
   };
 
@@ -147,6 +153,7 @@ export default function Home() {
                     <option value="SSTF">SSTF (Shortest Seek Time First)</option>
                     <option value="SCAN">SCAN (Elevator)</option>
                     <option value="C-SCAN">C-SCAN (Circular SCAN)</option>
+                    <option value="F-SCAN">F-SCAN (Frozen SCAN)</option>
                     <option value="SCAN-N">SCAN-N (N-step SCAN)</option>
                     <option value="LOOK">LOOK</option>
                     <option value="C-LOOK">C-LOOK (Circular LOOK)</option>
@@ -215,7 +222,39 @@ export default function Home() {
                   </div>
                 </div>
 
-                {(algorithm === 'SCAN' || algorithm === 'LOOK' || algorithm === 'C-SCAN' || algorithm === 'F-LOOK' || algorithm === 'SCAN-N' || algorithm === 'C-LOOK') && (
+                {/* Nuevos inputs de tiempo para simulación lógica */}
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-md border border-gray-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tiempo por Pista
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={timePerTrack}
+                      onChange={(e) => setTimePerTrack(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      placeholder="Ej: 1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Coste de mover 1 pista</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tiempo por Petición
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={timePerRequest}
+                      onChange={(e) => setTimePerRequest(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      placeholder="Ej: 0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Overhead por servicio</p>
+                  </div>
+                </div>
+
+                {(algorithm === 'SCAN' || algorithm === 'LOOK' || algorithm === 'C-SCAN' || algorithm === 'F-LOOK' || algorithm === 'SCAN-N' || algorithm === 'C-LOOK' || algorithm === 'F-SCAN') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Dirección Inicial
