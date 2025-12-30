@@ -7,9 +7,9 @@ type Unit = "B" | "KB" | "MB" | "GB";
 
 export default function DiskGeometryCalculator() {
     // Geometry Inputs
-    const [heads, setHeads] = useState<number>(4);
-    const [sectorsPerTrack, setSectorsPerTrack] = useState<number>(8);
-    const [sectorSize, setSectorSize] = useState<number>(512);
+    const [heads, setHeads] = useState<number | "">("");
+    const [sectorsPerTrack, setSectorsPerTrack] = useState<number | "">("");
+    const [sectorSize, setSectorSize] = useState<number | "">("");
 
     // Solve Mode: "capacity" -> User enters Cylinders, we calc Capacity
     //             "cylinders" -> User enters Capacity, we calc Cylinders
@@ -17,12 +17,12 @@ export default function DiskGeometryCalculator() {
 
     // Cylinder/Capacity Inputs
     const [cylindersInput, setCylindersInput] = useState<string>("");
-    const [capacityInput, setCapacityInput] = useState<string>("4");
+    const [capacityInput, setCapacityInput] = useState<string>("");
     const [capacityUnit, setCapacityUnit] = useState<Unit>("MB");
 
     // Block Inputs
     const [blockSizeMode, setBlockSizeMode] = useState<"sectors" | "bytes">("sectors");
-    const [blockSizeVal, setBlockSizeVal] = useState<string>("4"); // sectors or bytes/kb
+    const [blockSizeVal, setBlockSizeVal] = useState<string>(""); // sectors or bytes/kb
     const [blockSizeUnit, setBlockSizeUnit] = useState<Unit>("KB"); // used if mode is bytes
 
     // Results State
@@ -59,20 +59,24 @@ export default function DiskGeometryCalculator() {
         let totalCap = 0;
 
         // 1. Determine Cylinders & Total Capacity based on mode
+        const h = heads as number;
+        const s = sectorsPerTrack as number;
+        const ss = sectorSize as number;
+
         if (solveMode === "capacity") {
             // User entered Cylinders
             const c = parseFloat(cylindersInput);
-            if (isNaN(c)) {
+            if (isNaN(c) || heads === "" || sectorsPerTrack === "" || sectorSize === "") {
                 setResults(null);
                 return;
             }
             calculatedCylinders = c;
-            const totalSec = c * heads * sectorsPerTrack;
-            totalCap = totalSec * sectorSize;
+            const totalSec = c * h * s;
+            totalCap = totalSec * ss;
         } else {
             // User entered Capacity
             const capVal = parseFloat(capacityInput);
-            if (isNaN(capVal)) {
+            if (isNaN(capVal) || heads === "" || sectorsPerTrack === "" || sectorSize === "") {
                 setResults(null);
                 return;
             }
@@ -87,7 +91,7 @@ export default function DiskGeometryCalculator() {
 
             // Solve for Cylinders: Cap = C * H * S * Size
             // C = Cap / (H * S * Size)
-            const denom = heads * sectorsPerTrack * sectorSize;
+            const denom = h * s * ss;
             if (denom === 0) {
                 setResults(null);
                 return;
@@ -97,7 +101,12 @@ export default function DiskGeometryCalculator() {
 
         // 2. Block Calculations
         let sectorsPerBlock = 0;
-        if (blockSizeMode === "sectors") {
+        if (blockSizeVal === "") {
+            // Handle empty block size input gracefully - either assume 1 or don't result?
+            // Assuming 1 sector default or maybe 0?
+            // Let's assume 0 and check later
+            sectorsPerBlock = 0;
+        } else if (blockSizeMode === "sectors") {
             sectorsPerBlock = parseFloat(blockSizeVal);
         } else {
             // Bytes mode
@@ -107,15 +116,18 @@ export default function DiskGeometryCalculator() {
             if (blockSizeUnit === "MB") mult = 1024 * 1024;
             // if unit is B => mult 1
             const sizeBytes = val * mult;
-            sectorsPerBlock = sizeBytes / sectorSize;
+            // sectorSize must be valid number
+            if (typeof ss === 'number' && ss > 0) {
+                sectorsPerBlock = sizeBytes / ss;
+            }
         }
 
         if (isNaN(sectorsPerBlock) || sectorsPerBlock === 0) sectorsPerBlock = 1;
 
-        const totalSectors = calculatedCylinders * heads * sectorsPerTrack;
-        const totalTracks = calculatedCylinders * heads;
-        const blocksPerTrack = sectorsPerTrack / sectorsPerBlock;
-        const blocksPerCylinder = blocksPerTrack * heads;
+        const totalSectors = calculatedCylinders * h * s;
+        const totalTracks = calculatedCylinders * h;
+        const blocksPerTrack = s / sectorsPerBlock;
+        const blocksPerCylinder = blocksPerTrack * h;
 
         setResults({
             totalSectors,
@@ -125,9 +137,9 @@ export default function DiskGeometryCalculator() {
             blocksPerTrack,
             blocksPerCylinder,
             sectorsPerBlock,
-            sectorSizeBytes: sectorSize,
-            sectorsPerTrack,
-            heads,
+            sectorSizeBytes: ss,
+            sectorsPerTrack: s,
+            heads: h,
         });
     };
 
@@ -155,8 +167,9 @@ export default function DiskGeometryCalculator() {
                             <input
                                 type="number"
                                 value={heads}
-                                onChange={(e) => setHeads(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => setHeads(e.target.value === "" ? "" : parseFloat(e.target.value))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="4"
                             />
                         </div>
 
@@ -165,8 +178,9 @@ export default function DiskGeometryCalculator() {
                             <input
                                 type="number"
                                 value={sectorsPerTrack}
-                                onChange={(e) => setSectorsPerTrack(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => setSectorsPerTrack(e.target.value === "" ? "" : parseFloat(e.target.value))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="8"
                             />
                         </div>
 
@@ -175,8 +189,9 @@ export default function DiskGeometryCalculator() {
                             <input
                                 type="number"
                                 value={sectorSize}
-                                onChange={(e) => setSectorSize(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => setSectorSize(e.target.value === "" ? "" : parseFloat(e.target.value))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="512"
                             />
                         </div>
                     </div>
@@ -189,8 +204,8 @@ export default function DiskGeometryCalculator() {
                             <button
                                 onClick={() => setSolveMode("cylinders")}
                                 className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors ${solveMode === "cylinders"
-                                        ? "bg-primary-600 text-white shadow-sm"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    ? "bg-primary-600 text-white shadow-sm"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     }`}
                             >
                                 Tengo la Capacidad
@@ -198,8 +213,8 @@ export default function DiskGeometryCalculator() {
                             <button
                                 onClick={() => setSolveMode("capacity")}
                                 className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors ${solveMode === "capacity"
-                                        ? "bg-primary-600 text-white shadow-sm"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    ? "bg-primary-600 text-white shadow-sm"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     }`}
                             >
                                 Tengo los Cilindros
@@ -215,6 +230,7 @@ export default function DiskGeometryCalculator() {
                                         value={capacityInput}
                                         onChange={(e) => setCapacityInput(e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                        placeholder="4"
                                     />
                                 </div>
                                 <div className="w-28">
@@ -239,6 +255,7 @@ export default function DiskGeometryCalculator() {
                                     value={cylindersInput}
                                     onChange={(e) => setCylindersInput(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    placeholder="40"
                                 />
                             </div>
                         )}
@@ -277,7 +294,7 @@ export default function DiskGeometryCalculator() {
                                     value={blockSizeVal}
                                     onChange={(e) => setBlockSizeVal(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    placeholder="Ej: 4"
+                                    placeholder="4"
                                 />
                             </div>
                         ) : (
@@ -287,7 +304,7 @@ export default function DiskGeometryCalculator() {
                                     value={blockSizeVal}
                                     onChange={(e) => setBlockSizeVal(e.target.value)}
                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    placeholder="Ej: 1"
+                                    placeholder="1"
                                 />
                                 <select
                                     value={blockSizeUnit}
