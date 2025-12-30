@@ -96,7 +96,7 @@ export default function TimeAnalysis({ totalTracksMoved, totalRequests }: TimeAn
                 </div>
 
                 {/* Results Row */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
                     {result ? (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
                             <CompactResultItem
@@ -115,7 +115,7 @@ export default function TimeAnalysis({ totalTracksMoved, totalRequests }: TimeAn
                                 colorClass="text-amber-600"
                             />
 
-                            <div className="text-right border-t md:border-t-0 md:border-l border-gray-100 pt-2 md:pt-0 md:pl-6">
+                            <div className="text-right border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-700 pt-2 md:pt-0 md:pl-6">
                                 <span className="block text-xs text-gray-400 uppercase font-bold">Tiempo Total</span>
                                 <span className="block text-2xl font-bold text-green-600 leading-none">
                                     {formatTime(result.totalTime)} <span className="text-base font-normal text-gray-500">ms</span>

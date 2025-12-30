@@ -11,6 +11,7 @@ import DiskGeometryCalculator from '@/components/DiskGeometryCalculator';
 import TimeAnalysis from '@/components/TimeAnalysis';
 import Link from 'next/link';
 import { IconSchool, IconInfoCircle, IconBug, IconStar } from '@tabler/icons-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import BugReportModal from '@/components/BugReportModal';
 
 
@@ -93,11 +94,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6 p-4 bg-white rounded-lg shadow-sm">
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/50 border border-gray-100 dark:border-gray-700 transition-colors">
           {/* Left: UHU Logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 bg-white p-2 rounded-lg">
             <img
               src="/logoUHU.webp"
               alt="Logo UHU"
@@ -107,19 +108,19 @@ export default function Home() {
 
           {/* Center: Course Name + Title + Desc */}
           <div className="text-center flex-1 flex flex-col items-center">
-            <p className="text-gray-400 font-bold text-xs leading-tight uppercase tracking-wide mb-1">
+            <p className="text-gray-400 dark:text-gray-500 font-bold text-xs leading-tight uppercase tracking-wide mb-1">
               Diseño y Estructura de los Sistemas Operativos
             </p>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
               Simulador de Ejercicios de E/S (UHU)
             </h1>
-            <p className="text-gray-600 text-sm md:text-base">
+            <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base">
               Simulador interactivo para algoritmos de planificación de discos (SSTF, SCAN, LOOK, C-SCAN, F-LOOK, SCAN-N, C-LOOK)
             </p>
           </div>
 
           {/* Right: ETSI Logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 bg-white p-2 rounded-lg">
             <img
               src="/logoETSI.webp"
               alt="Logo ETSI"
@@ -133,22 +134,24 @@ export default function Home() {
           <div className="space-y-6">
             <InputSection title={
               <div className="flex items-center justify-between w-full">
-                <span>Configuración del Algoritmo</span>
-                <Link href="/guide" className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800 rounded-md transition-colors text-sm font-medium border border-primary-100 group shadow-sm" title="Ver Guía Interactiva">
-                  <span className="hidden sm:inline">Guía Básica</span>
-                  <IconSchool size={18} stroke={1.5} className="group-hover:scale-110 transition-transform" />
-                </Link>
+                <span className="text-gray-900 dark:text-white">Configuración del Algoritmo</span>
+                <div className="flex items-center gap-2">
+                  <Link href="/guide" className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 rounded-md transition-colors text-sm font-medium border border-primary-100 dark:border-primary-800 group shadow-sm" title="Ver Guía Interactiva">
+                    <span className="hidden sm:inline">Guía Básica</span>
+                    <IconSchool size={18} stroke={1.5} className="group-hover:scale-110 transition-transform" />
+                  </Link>
+                </div>
               </div>
             }>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Algoritmo
                   </label>
                   <select
                     value={algorithm}
                     onChange={(e) => setAlgorithm(e.target.value as Algorithm)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value="SSTF">SSTF (Shortest Seek Time First)</option>
                     <option value="SCAN">SCAN (Elevator)</option>
@@ -163,7 +166,7 @@ export default function Home() {
 
                 {algorithm === 'SCAN-N' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       N (Tamaño del paso)
                     </label>
                     <input
@@ -171,13 +174,13 @@ export default function Home() {
                       value={nStep}
                       onChange={(e) => setNStep(e.target.value === '' ? '' : parseInt(e.target.value))}
                       placeholder="Ej: 2"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Pista Inicial
                   </label>
                   <input
@@ -185,7 +188,7 @@ export default function Home() {
                     value={initialTrack}
                     onChange={(e) => setInitialTrack(e.target.value === '' ? '' : parseInt(e.target.value))}
                     placeholder="Ej: 50"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -197,7 +200,7 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Pista Mínima
                     </label>
                     <input
@@ -205,11 +208,11 @@ export default function Home() {
                       value={minTrack}
                       onChange={(e) => setMinTrack(e.target.value === '' ? '' : parseInt(e.target.value))}
                       placeholder="Ej: 0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Pista Máxima
                     </label>
                     <input
@@ -217,15 +220,15 @@ export default function Home() {
                       value={maxTrack}
                       onChange={(e) => setMaxTrack(e.target.value === '' ? '' : parseInt(e.target.value))}
                       placeholder="Ej: 99"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
 
                 {/* Nuevos inputs de tiempo para simulación lógica */}
-                <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-md border border-gray-200">
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md border border-gray-200 dark:border-gray-600">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Tiempo por Pista
                     </label>
                     <input
@@ -234,12 +237,12 @@ export default function Home() {
                       value={timePerTrack}
                       onChange={(e) => setTimePerTrack(e.target.value === '' ? '' : parseFloat(e.target.value))}
                       placeholder="Ej: 1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Coste de mover 1 pista</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Coste de mover 1 pista</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Tiempo por Petición
                     </label>
                     <input
@@ -248,21 +251,21 @@ export default function Home() {
                       value={timePerRequest}
                       onChange={(e) => setTimePerRequest(e.target.value === '' ? '' : parseFloat(e.target.value))}
                       placeholder="Ej: 0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Overhead por servicio</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Overhead por servicio</p>
                   </div>
                 </div>
 
                 {(algorithm === 'SCAN' || algorithm === 'LOOK' || algorithm === 'C-SCAN' || algorithm === 'F-LOOK' || algorithm === 'SCAN-N' || algorithm === 'C-LOOK' || algorithm === 'F-SCAN') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Dirección Inicial
                     </label>
                     <select
                       value={direction}
                       onChange={(e) => setDirection(e.target.value as 'asc' | 'desc')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="asc">Ascendente (Hacia arriba)</option>
                       <option value="desc">Descendente (Hacia abajo)</option>
@@ -273,13 +276,13 @@ export default function Home() {
                 <div className="space-y-3">
                   <button
                     onClick={handleCalculate}
-                    className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 shadow-md hover:shadow-lg"
+                    className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 shadow-md hover:shadow-lg dark:bg-primary-500 dark:hover:bg-primary-600"
                   >
                     Calcular
                   </button>
                   <button
                     onClick={handleReset}
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md transition duration-200 border border-gray-300"
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md transition duration-200 border border-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 dark:border-gray-600"
                   >
                     Reiniciar
                   </button>
@@ -303,22 +306,22 @@ export default function Home() {
                   minTrack={minTrack === '' ? 0 : minTrack}
                 />
 
-                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
                     Tabla Detallada
                   </h3>
                   <ResultTable steps={result.steps} totalTracks={result.totalTracks} />
                 </div>
 
-                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
                     Resultados
                   </h3>
                   <div className="space-y-2">
                     <div className="mb-4">
-                      <span className="text-xs text-gray-500 uppercase font-bold mb-1 block">Secuencia de Atención</span>
-                      <div className="bg-gray-50 px-3 py-2 rounded border border-gray-100 text-sm text-gray-800 font-medium break-words leading-relaxed shadow-inner">
-                        <span className="text-primary-700">{initialTrack}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold mb-1 block">Secuencia de Atención</span>
+                      <div className="bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded border border-gray-100 dark:border-gray-600 text-sm text-gray-800 dark:text-gray-200 font-medium break-words leading-relaxed shadow-inner">
+                        <span className="text-primary-700 dark:text-primary-300">{initialTrack}</span>
                         {result.sequence.map((track: number, i: number) => (
                           <span key={i}>
                             <span className="text-gray-400 mx-1">→</span>
@@ -328,19 +331,19 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                      <div className="bg-gray-50 p-3 rounded-md text-center">
-                        <span className="block text-xs text-gray-500 uppercase font-bold">Total Pistas</span>
-                        <span className="text-xl font-bold text-primary-600">{result.totalTracks}</span>
+                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md text-center">
+                        <span className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Total Pistas</span>
+                        <span className="text-xl font-bold text-primary-600 dark:text-primary-400">{result.totalTracks}</span>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md text-center">
-                        <span className="block text-xs text-gray-500 uppercase font-bold">Instante Fin</span>
-                        <span className="text-xl font-bold text-primary-600">
+                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md text-center">
+                        <span className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Instante Fin</span>
+                        <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
                           {result.totalTime !== undefined ? result.totalTime.toFixed(1) : '-'}
                         </span>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md text-center">
-                        <span className="block text-xs text-gray-500 uppercase font-bold">Media Pistas/Pet.</span>
-                        <span className="text-xl font-bold text-primary-600">
+                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md text-center">
+                        <span className="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Media Pistas/Pet.</span>
+                        <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
                           {arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0) > 0
                             ? (result.totalTracks / arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0)).toFixed(2)
                             : 0}
@@ -359,8 +362,8 @@ export default function Home() {
             )}
 
             {!result && (
-              <div className="bg-white rounded-lg shadow-md p-12 border border-gray-200 text-center">
-                <p className="text-gray-500">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 border border-gray-200 dark:border-gray-700 text-center">
+                <p className="text-gray-500 dark:text-gray-400">
                   Ingrese los parámetros y haga clic en "Calcular" para ver los resultados
                 </p>
               </div>
@@ -368,19 +371,24 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="mt-12 text-center border-t border-gray-200 bg-gray-50/50">
+        <footer className="mt-12 text-center border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           {/* Footer Content */}
         </footer>
         <GitHubContributors />
 
         {/* Floating Action Buttons */}
         <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 opacity-90 hover:opacity-100 transition-opacity">
+          {/* Theme Toggle */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1">
+            <ThemeToggle />
+          </div>
+
           {/* GitHub Star Button */}
           <a
             href="https://github.com/sebascm-dev/simulador-ejercicios-entrada-salida"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-bold shadow-lg hover:shadow-xl hover:bg-black transition-all transform hover:-translate-y-1 hover:scale-105"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-bold shadow-lg hover:shadow-xl hover:bg-black transition-all transform hover:-translate-y-1 hover:scale-105 dark:border dark:border-gray-700"
           >
             <IconStar size={18} className="text-yellow-400" fill="currentColor" />
             <span>Star on GitHub</span>
@@ -389,7 +397,7 @@ export default function Home() {
           {/* Bug Report Button */}
           <button
             onClick={() => setIsBugModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-red-100 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-md text-sm font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 hover:scale-105"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900 text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md text-sm font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 hover:scale-105"
           >
             <IconBug size={18} className="text-red-500" />
             <span>¿Has encontrado un BUG?</span>
@@ -404,4 +412,3 @@ export default function Home() {
     </div >
   );
 }
-

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { IconBrandGithub } from '@tabler/icons-react';
 
 interface Contributor {
     id: number;
@@ -84,64 +85,69 @@ const GitHubContributors: React.FC = () => {
     const otherContributors = contributors.filter(c => c.login !== 'sebascm-dev');
 
     return (
-        <div className="mt-12 mb-8 flex flex-col items-center">
+        <div className="mt-4 mb-8 flex flex-col items-center">
 
             {/* Main Author */}
-            {mainAuthor && (
-                <div className="flex flex-col items-center mb-6 animate-fade-in-up">
-                    <p className="text-gray-500 text-sm mb-4 font-medium">
-                        Proyecto realizado por:
-                    </p>
+            <div className="py-6 w-full">
+                <h3 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-6">
+                    Equipo de Desarrollo
+                </h3>
+
+                <div className="flex justify-center mb-8">
                     <a
-                        href={mainAuthor.html_url}
+                        href="https://github.com/sebascm-dev"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group relative inline-block"
-                        title="Creador Principal"
+                        className="group flex flex-col items-center gap-3 p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-gray-100 dark:hover:border-blue-900 transition-all duration-300"
                     >
-                        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white ring-4 ring-primary-100 shadow-xl group-hover:scale-105 transition-transform duration-300">
+                        <div className="relative">
                             <img
-                                src={mainAuthor.avatar_url}
-                                alt={mainAuthor.login}
-                                className="w-full h-full object-cover"
+                                src="https://github.com/sebascm-dev.png"
+                                alt="Sebastián C. M."
+                                className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-700 shadow-sm transition-transform duration-300 group-hover:scale-105"
                             />
                         </div>
+                        <div className="text-center">
+                            <span className="block text-sm font-bold text-gray-800 dark:text-gray-100">
+                                sebascm-dev
+                            </span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                Desarrollador Principal
+                            </span>
+                        </div>
                     </a>
-                    <div className="mt-3 text-center">
-                        <p className="text-gray-900 font-bold text-lg">{mainAuthor.login}</p>
-                        <p className="text-primary-600 text-xs font-semibold uppercase tracking-wider">Creador</p>
-                    </div>
                 </div>
-            )}
 
-            {/* Other Contributors */}
-            {otherContributors.length > 0 && (
-                <div className="text-center">
-                    <h3 className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold mb-3">
-                        Colaboradores
-                    </h3>
-                    <div className="flex justify-center flex-wrap gap-2">
-                        {otherContributors.map((contributor) => (
-                            <a
-                                key={contributor.id}
-                                href={contributor.html_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group relative"
-                                title={`${contributor.login} (${contributor.contributions} contribuciones)`}
-                            >
-                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white ring-1 ring-gray-200 group-hover:ring-primary-400 transition-all duration-200 transform group-hover:scale-105 shadow-sm opacity-80 group-hover:opacity-100 grayscale group-hover:grayscale-0">
+                {/* Other Contributors */}
+                {otherContributors.length > 0 && (
+                    <div className="text-center">
+                        <h3 className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-widest font-semibold mb-3">
+                            Colaboradores
+                        </h3>
+                        <div className="flex flex-wrap justify-center gap-4">
+                            {otherContributors.map((contributor) => (
+                                <a
+                                    key={contributor.id}
+                                    href={contributor.html_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group flex items-center gap-2 pr-3 pl-1 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-sm transition-all duration-200"
+                                    title={`${contributor.login} - ${contributor.contributions} contribuciones`}
+                                >
                                     <img
                                         src={contributor.avatar_url}
                                         alt={contributor.login}
-                                        className="w-full h-full object-cover"
+                                        className="w-6 h-6 rounded-full border border-gray-100 dark:border-gray-600"
                                     />
-                                </div>
-                            </a>
-                        ))}
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                                        {contributor.login}
+                                    </span>
+                                </a>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };
