@@ -10,8 +10,8 @@ import GitHubContributors from '@/components/GitHubContributors';
 import DiskGeometryCalculator from '@/components/DiskGeometryCalculator';
 import TimeAnalysis from '@/components/TimeAnalysis';
 import Link from 'next/link';
-import { IconSchool } from '@tabler/icons-react';
-
+import { IconSchool, IconInfoCircle, IconBug, IconStar } from '@tabler/icons-react';
+import BugReportModal from '@/components/BugReportModal';
 
 
 export default function Home() {
@@ -24,6 +24,7 @@ export default function Home() {
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
   const [timePerTrack, setTimePerTrack] = useState<number | ''>(1);
   const [timePerRequest, setTimePerRequest] = useState<number | ''>(0);
+  const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [result, setResult] = useState<any>(null);
 
   const handleCalculate = () => {
@@ -133,8 +134,9 @@ export default function Home() {
             <InputSection title={
               <div className="flex items-center justify-between w-full">
                 <span>Configuración del Algoritmo</span>
-                <Link href="/guide" className="text-gray-400 hover:text-primary-600 transition-colors p-1 rounded-full hover:bg-gray-100" title="Ver Guía Interactiva">
-                  <IconSchool size={20} stroke={1.5} />
+                <Link href="/guide" className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800 rounded-md transition-colors text-sm font-medium border border-primary-100 group shadow-sm" title="Ver Guía Interactiva">
+                  <span className="hidden sm:inline">Guía Básica</span>
+                  <IconSchool size={18} stroke={1.5} className="group-hover:scale-110 transition-transform" />
                 </Link>
               </div>
             }>
@@ -366,13 +368,40 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="mt-12 py-6 text-center text-gray-500 text-sm border-t border-gray-200">
-          <p>
-            Hecho por <span className="font-semibold text-gray-700">Sebastián Contreras Marín</span> - Universidad de Huelva (Ingeniería Informática)
-          </p>
+        <footer className="mt-12 text-center border-t border-gray-200 bg-gray-50/50">
+          {/* Footer Content */}
         </footer>
         <GitHubContributors />
-      </div>
-    </div>
+
+        {/* Floating Action Buttons */}
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 opacity-90 hover:opacity-100 transition-opacity">
+          {/* GitHub Star Button */}
+          <a
+            href="https://github.com/sebascm-dev/simulador-ejercicios-entrada-salida"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-bold shadow-lg hover:shadow-xl hover:bg-black transition-all transform hover:-translate-y-1 hover:scale-105"
+          >
+            <IconStar size={18} className="text-yellow-400" fill="currentColor" />
+            <span>Star on GitHub</span>
+          </a>
+
+          {/* Bug Report Button */}
+          <button
+            onClick={() => setIsBugModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-red-100 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-md text-sm font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 hover:scale-105"
+          >
+            <IconBug size={18} className="text-red-500" />
+            <span>¿Has encontrado un BUG?</span>
+          </button>
+        </div>
+
+        <BugReportModal
+          isOpen={isBugModalOpen}
+          onClose={() => setIsBugModalOpen(false)}
+        />
+      </div >
+    </div >
   );
 }
+
