@@ -9,6 +9,7 @@ export interface AlgorithmResult {
   sequence: number[];
   totalTracks: number;
   steps: AlgorithmStep[];
+  totalTime: number;
 }
 
 export interface AlgorithmStep {
@@ -18,6 +19,7 @@ export interface AlgorithmStep {
   remaining: number[];
   instant?: number; // Instante en que se procesa este paso
   arrivalInstant?: number; // Instante de llegada de la petición procesada
+  buffer?: number[]; // Cola de espera (buffer) para algoritmos tipo F-SCAN
 }
 
 // Función auxiliar para encontrar si alguna petición pendiente "intercepta" el movimiento
@@ -183,7 +185,7 @@ export function calculateSSTF(
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
 
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 export function calculateSCAN(
@@ -326,7 +328,7 @@ export function calculateSCAN(
   }
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 export function calculateLOOK(
@@ -436,7 +438,7 @@ export function calculateLOOK(
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
 
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 export function calculateCSCAN(
@@ -644,7 +646,7 @@ export function calculateCSCAN(
   }
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 
@@ -734,6 +736,7 @@ export function calculateFSCAN(
           to: currentTrack,
           distance: 0,
           remaining: activeQueue.map(r => r.track),
+          buffer: bufferQueue.map(r => r.track),
           instant: currentTime,
           arrivalInstant: atCurrent.arrivalTime,
         });
@@ -813,6 +816,7 @@ export function calculateFSCAN(
         to: actualDest,
         distance,
         remaining: activeQueue.map(r => r.track),
+        buffer: bufferQueue.map(r => r.track),
         instant: currentTime,
         arrivalInstant: targetRequest ? targetRequest.arrivalTime : undefined
       });
@@ -844,7 +848,8 @@ export function calculateFSCAN(
   }
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
-  return { sequence, totalTracks, steps };
+  const result: AlgorithmResult = { sequence, totalTracks, steps, totalTime: currentTime };
+  return result;
 }
 
 export function calculateFLOOK(
@@ -958,7 +963,7 @@ export function calculateFLOOK(
   }
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 export function calculateSCAN_N(
@@ -1145,7 +1150,7 @@ export function calculateSCAN_N(
   }
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 export function calculateCLOOK(
@@ -1314,7 +1319,7 @@ export function calculateCLOOK(
   }
 
   const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
-  return { sequence, totalTracks, steps };
+  return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
 export function calculateAlgorithm(
