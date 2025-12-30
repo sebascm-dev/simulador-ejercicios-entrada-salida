@@ -72,9 +72,9 @@ export default function TrackVisualization({
   }
 
   // Calcular el rango del eje Y
-  const allTracks = [initialTrack, ...steps.map(s => s.to), ...steps.map(s => s.from)];
-  const minY = Math.max(0, Math.min(...allTracks) - 10);
-  const maxY = Math.max(...allTracks, maxTrack) + 10;
+  // El usuario quiere que el eje Y vaya exactamente de minTrack a maxTrack
+  const minY = minTrack;
+  const maxY = maxTrack;
 
   // Custom dot para puntos especiales
   const CustomDot = (props: any) => {
@@ -294,6 +294,7 @@ export default function TrackVisualization({
               stroke="#6b7280"
               tick={{ fill: '#6b7280' }}
               domain={[minY, maxY]}
+              allowDataOverflow={true}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend

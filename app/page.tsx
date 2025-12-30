@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Algorithm, calculateAlgorithm, DiskRequest } from '@/lib/algorithms';
-import { calculateAccessTime, calculateBlocksPerCylinder, blockToTrack, DiskSpecs, TimeSpecs } from '@/lib/calculations';
 import InputSection from '@/components/InputSection';
 import ResultTable from '@/components/ResultTable';
 import TrackVisualization from '@/components/TrackVisualization';
@@ -30,29 +29,11 @@ export default function Home() {
   const [requests, setRequests] = useState<string>('');
   const [arrivalInstances, setArrivalInstances] = useState<ArrivalInstance[]>([]);
   const [useArrivalInstances, setUseArrivalInstances] = useState<boolean>(false);
-  const [timePerTrack, setTimePerTrack] = useState<number | ''>(1); // Tiempo por pista recorrida
-  const [timePerRequest, setTimePerRequest] = useState<number | ''>(0); // Tiempo por solicitud (service time)
   const [minTrack, setMinTrack] = useState<number | ''>(0);
   const [maxTrack, setMaxTrack] = useState<number | ''>(0);
   const [nStep, setNStep] = useState<number | ''>(2); // N para SCAN-N
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
   const [result, setResult] = useState<any>(null);
-  const [timeResult, setTimeResult] = useState<any>(null);
-
-  // Especificaciones del disco para cálculos de tiempo
-  const [diskSpecs, setDiskSpecs] = useState<DiskSpecs>({
-    sectorsPerTrack: 10,
-    cylinders: 100,
-    faces: 2,
-    sectorSize: 512,
-    blockSize: 1024,
-  });
-
-  const [timeSpecs, setTimeSpecs] = useState<TimeSpecs>({
-    seekTimePerTrack: 1, // ms
-    rpm: 1000,
-    sectorsPerBlock: 2,
-  });
 
   const handleCalculate = () => {
     try {
@@ -100,43 +81,23 @@ export default function Home() {
       const safeInitialTrack = initialTrack === '' ? 0 : initialTrack;
       const safeMinTrack = minTrack === '' ? 0 : minTrack;
       const safeMaxTrack = maxTrack === '' ? 0 : maxTrack;
-      const safeTimePerTrack = timePerTrack === '' ? 0 : timePerTrack;
-      const safeTimePerRequest = timePerRequest === '' ? 0 : timePerRequest;
       const safeNStep = nStep === '' ? 2 : nStep;
 
-      // Todos los algoritmos ahora soportan tiempos de llegada y service time
+      // Todos los algoritmos ahora soportan tiempos de llegada y service time (se pasan 0 para compatibilidad)
       if (useArrivalInstances && arrivalInstances.length > 0) {
-        // Usar DiskRequest[] con tiempos de llegada
-        algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, diskRequests, safeMaxTrack, direction, safeTimePerTrack, safeTimePerRequest, safeMinTrack, safeNStep);
+        algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, diskRequests, safeMaxTrack, direction, 0, 0, safeMinTrack, safeNStep);
       } else {
-        // Sin instantes, crear con tiempos 0 (todos disponibles desde el inicio)
         const defaultRequests: DiskRequest[] = requestArray.map(track => ({
           track,
           arrivalTime: 0,
         }));
-        algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, defaultRequests, safeMaxTrack, direction, safeTimePerTrack, safeTimePerRequest, safeMinTrack, safeNStep);
+        algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, defaultRequests, safeMaxTrack, direction, 0, 0, safeMinTrack, safeNStep);
       }
 
       setResult(algorithmResult);
-
-      // Calcular tiempos si se proporcionan las especificaciones
-      if (timeSpecs.seekTimePerTrack > 0 && timeSpecs.rpm > 0) {
-        const accessTime = calculateAccessTime(
-          algorithmResult.totalTracks,
-          requestArray.length,
-          timeSpecs,
-          diskSpecs
-        );
-        setTimeResult(accessTime);
-      }
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     }
-  };
-
-  const handleCalculateBlocks = () => {
-    const blocks = calculateBlocksPerCylinder(diskSpecs);
-    alert(`Bloques por cilindro: ${blocks}`);
   };
 
   const handleReset = () => {
@@ -145,26 +106,11 @@ export default function Home() {
     setRequests('');
     setArrivalInstances([]);
     setUseArrivalInstances(false);
-    setTimePerTrack(1);
-    setTimePerRequest(0);
     setMinTrack(0);
     setMaxTrack(0);
     setNStep(2);
     setDirection('asc');
     setResult(null);
-    setTimeResult(null);
-    setDiskSpecs({
-      sectorsPerTrack: 10,
-      cylinders: 100,
-      faces: 2,
-      sectorSize: 512,
-      blockSize: 1024,
-    });
-    setTimeSpecs({
-      seekTimePerTrack: 1,
-      rpm: 1000,
-      sectorsPerBlock: 2,
-    });
   };
 
   return (
@@ -292,41 +238,6 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tiempo por Pista Recorrida (unidades)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={timePerTrack}
-                      onChange={(e) => setTimePerTrack(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                      placeholder="Ej: 1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Tiempo/pista (para instantes)
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tiempo por Solicitud (Service Time)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={timePerRequest}
-                      onChange={(e) => setTimePerRequest(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                      placeholder="Ej: 0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Tiempo extra (procesamiento)
-                    </p>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -390,75 +301,6 @@ export default function Home() {
 
             <DiskGeometryCalculator />
 
-            <DevelopmentOverlay>
-              <InputSection title="Especificaciones del Disco (para cálculos de tiempo)">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Sectores por Pista
-                      </label>
-                      <input
-                        type="number"
-                        value={diskSpecs.sectorsPerTrack}
-                        onChange={(e) => setDiskSpecs({ ...diskSpecs, sectorsPerTrack: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Cilindros
-                      </label>
-                      <input
-                        type="number"
-                        value={diskSpecs.cylinders}
-                        onChange={(e) => setDiskSpecs({ ...diskSpecs, cylinders: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Caras
-                      </label>
-                      <input
-                        type="number"
-                        value={diskSpecs.faces}
-                        onChange={(e) => setDiskSpecs({ ...diskSpecs, faces: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tamaño Sector (bytes)
-                      </label>
-                      <input
-                        type="number"
-                        value={diskSpecs.sectorSize}
-                        onChange={(e) => setDiskSpecs({ ...diskSpecs, sectorSize: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tamaño Bloque (bytes)
-                      </label>
-                      <input
-                        type="number"
-                        value={diskSpecs.blockSize}
-                        onChange={(e) => setDiskSpecs({ ...diskSpecs, blockSize: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleCalculateBlocks}
-                    className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
-                  >
-                    Calcular Bloques por Cilindro
-                  </button>
-                </div>
-              </InputSection>
-            </DevelopmentOverlay>
 
           </div>
 
