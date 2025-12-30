@@ -9,6 +9,8 @@ import ArrivalTimeInput, { ArrivalInstance } from '@/components/ArrivalTimeInput
 import GitHubContributors from '@/components/GitHubContributors';
 import DiskGeometryCalculator from '@/components/DiskGeometryCalculator';
 import TimeAnalysis from '@/components/TimeAnalysis';
+import Link from 'next/link';
+import { IconSchool } from '@tabler/icons-react';
 
 
 
@@ -128,7 +130,14 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Panel de Entrada */}
           <div className="space-y-6">
-            <InputSection title="Configuración del Algoritmo">
+            <InputSection title={
+              <div className="flex items-center justify-between w-full">
+                <span>Configuración del Algoritmo</span>
+                <Link href="/guide" className="text-gray-400 hover:text-primary-600 transition-colors p-1 rounded-full hover:bg-gray-100" title="Ver Guía Interactiva">
+                  <IconSchool size={20} stroke={1.5} />
+                </Link>
+              </div>
+            }>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

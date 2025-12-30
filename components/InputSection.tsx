@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface InputSectionProps {
-  title: string;
+  title: React.ReactNode;
   children: React.ReactNode;
 }
 
