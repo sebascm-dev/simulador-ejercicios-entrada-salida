@@ -9,6 +9,7 @@ import TrackVisualization from '@/components/TrackVisualization';
 import ArrivalTimeInput, { ArrivalInstance } from '@/components/ArrivalTimeInput';
 import GitHubContributors from '@/components/GitHubContributors';
 import DiskGeometryCalculator from '@/components/DiskGeometryCalculator';
+import TimeAnalysis from '@/components/TimeAnalysis';
 
 const DevelopmentOverlay = ({ children }: { children: React.ReactNode }) => (
   <div className="relative">
@@ -459,46 +460,6 @@ export default function Home() {
               </InputSection>
             </DevelopmentOverlay>
 
-            <DevelopmentOverlay>
-              <InputSection title="Especificaciones de Tiempo">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tiempo de Búsqueda por Pista (ms)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={timeSpecs.seekTimePerTrack}
-                      onChange={(e) => setTimeSpecs({ ...timeSpecs, seekTimePerTrack: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      RPM (Revoluciones por Minuto)
-                    </label>
-                    <input
-                      type="number"
-                      value={timeSpecs.rpm}
-                      onChange={(e) => setTimeSpecs({ ...timeSpecs, rpm: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sectores por Bloque
-                    </label>
-                    <input
-                      type="number"
-                      value={timeSpecs.sectorsPerBlock || 2}
-                      onChange={(e) => setTimeSpecs({ ...timeSpecs, sectorsPerBlock: parseInt(e.target.value) || 2 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                </div>
-              </InputSection>
-            </DevelopmentOverlay>
           </div>
 
           {/* Panel de Resultados */}
@@ -539,41 +500,13 @@ export default function Home() {
                   </div>
                 </div>
 
-                {timeResult && (
-                  <DevelopmentOverlay>
-                    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                        Tiempos de Acceso
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                          <span className="text-gray-700">Tiempo de Búsqueda:</span>
-                          <span className="font-semibold text-gray-900">
-                            {timeResult.seekTime.toFixed(2)} ms
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                          <span className="text-gray-700">Tiempo de Latencia:</span>
-                          <span className="font-semibold text-gray-900">
-                            {timeResult.latencyTime.toFixed(2)} ms
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                          <span className="text-gray-700">Tiempo de Transferencia:</span>
-                          <span className="font-semibold text-gray-900">
-                            {timeResult.transferTime.toFixed(2)} ms
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-primary-50 rounded border-2 border-primary-200">
-                          <span className="text-gray-800 font-semibold">Tiempo Total:</span>
-                          <span className="font-bold text-primary-700 text-lg">
-                            {timeResult.totalTime.toFixed(2)} ms
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </DevelopmentOverlay>
-                )}
+                {/* Time Analysis Component */}
+                <DevelopmentOverlay>
+                  <TimeAnalysis
+                    totalTracksMoved={result ? result.totalTracks : 0}
+                    totalRequests={result ? (useArrivalInstances ? arrivalInstances.length : requests.split(',').filter(x => x.trim()).length) : 0}
+                  />
+                </DevelopmentOverlay>
               </>
             )}
 

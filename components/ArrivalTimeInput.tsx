@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
 
@@ -13,10 +13,23 @@ interface ArrivalTimeInputProps {
 }
 
 export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInputProps) {
-  const [currentInstant, setCurrentInstant] = useState<number>(0);
+  // Use string state to allow empty inputs and decimals
+  const [currentInstantStr, setCurrentInstantStr] = useState<string>('');
   const [currentTracks, setCurrentTracks] = useState<string>('');
 
   const handleAddInstance = () => {
+    // Basic validation
+    if (currentInstantStr.trim() === '') {
+      alert('Por favor ingrese un instante de llegada');
+      return;
+    }
+
+    const instantVal = parseFloat(currentInstantStr);
+    if (isNaN(instantVal)) {
+      alert('El instante de llegada debe ser un número válido');
+      return;
+    }
+
     const tracksArray = currentTracks
       .split(',')
       .map(s => parseInt(s.trim()))
@@ -28,7 +41,7 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
     }
 
     const newInstance: ArrivalInstance = {
-      instant: currentInstant,
+      instant: instantVal,
       tracks: tracksArray,
     };
 
@@ -36,9 +49,9 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
     const updated = [...instances, newInstance].sort((a, b) => a.instant - b.instant);
     onChange(updated);
 
-    // Limpiar campos
+    // Limpiar campos - Reset to empty not 0
     setCurrentTracks('');
-    setCurrentInstant(Math.max(...updated.map(i => i.instant), 0) + 1);
+    setCurrentInstantStr('');
   };
 
   const handleRemoveInstance = (index: number) => {
@@ -46,24 +59,45 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
     onChange(updated);
   };
 
-  const handleEditInstance = (index: number, field: 'instant' | 'tracks', value: number | string) => {
+  const handleEditInstanceInstant = (index: number, valueStr: string) => {
+    // Allow typing, but update parent immediately if valid so main page re-renders?
+    // Actually typically for onChange(instances), we assume instances are complete.
+    // If we want valid instances in parent, we should parse.
+    // But if we want to allow typing "1.5" we can't force number immediately if user types "1."
+    // For simplicity in this specific "edit" mode inside the list, let's keep it robust.
+
+    // We update the instances with the parsed value if valid, or keep as is if we want robust edit.
+    // However, the props `instances` dictates `instant` is a number. 
+    // To support perfect live editing of decimals, we might need local state for the edit fields or just parse.
+    // Let's rely on standard number input behavior for now on the list items, but use string for the "Add New" part.
+    // For list items, if they want to support "1.", `parseFloat` handles "1." as "1". 
+    // Usually number inputs handle this better if we don't force controlled state too strictly or use string backing.
+    // Given the request, "decimales también", let's try to just parse float.
+    const val = parseFloat(valueStr);
     const updated = instances.map((inst, i) => {
       if (i === index) {
-        if (field === 'instant') {
-          return { ...inst, instant: value as number };
-        } else {
-          const tracksArray = (value as string)
-            .split(',')
-            .map(s => parseInt(s.trim()))
-            .filter(n => !isNaN(n));
-          return { ...inst, tracks: tracksArray.length > 0 ? tracksArray : inst.tracks };
-        }
+        return { ...inst, instant: isNaN(val) ? 0 : val };
       }
       return inst;
     });
-    // Ordenar sin mutar el array original
-    const sorted = [...updated].sort((a, b) => a.instant - b.instant);
-    onChange(sorted);
+    // Sort? Maybe don't auto-sort while editing to avoid jumping rows
+    // const sorted = [...updated].sort((a, b) => a.instant - b.instant);
+    onChange(updated);
+  };
+
+  const handleEditInstanceTracks = (index: number, valueStr: string) => {
+    const tracksArray = valueStr
+      .split(',')
+      .map(s => parseInt(s.trim()))
+      .filter(n => !isNaN(n));
+
+    const updated = instances.map((inst, i) => {
+      if (i === index) {
+        return { ...inst, tracks: tracksArray.length > 0 ? tracksArray : inst.tracks };
+      }
+      return inst;
+    });
+    onChange(updated);
   };
 
   // Convertir a formato simple para compatibilidad
@@ -82,10 +116,11 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
             </label>
             <input
               type="number"
-              value={currentInstant}
-              onChange={(e) => setCurrentInstant(parseInt(e.target.value) || 0)}
+              step="0.1"
+              value={currentInstantStr}
+              onChange={(e) => setCurrentInstantStr(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="0"
+              placeholder="ej: 0.5"
             />
           </div>
           <div className="md:col-span-2">
@@ -126,8 +161,9 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
                       </label>
                       <input
                         type="number"
+                        step="0.1"
                         value={instance.instant}
-                        onChange={(e) => handleEditInstance(index, 'instant', parseInt(e.target.value) || 0)}
+                        onChange={(e) => handleEditInstanceInstant(index, e.target.value)}
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -138,7 +174,7 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
                       <input
                         type="text"
                         value={instance.tracks.join(', ')}
-                        onChange={(e) => handleEditInstance(index, 'tracks', e.target.value)}
+                        onChange={(e) => handleEditInstanceTracks(index, e.target.value)}
                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -167,4 +203,3 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
     </div>
   );
 }
-
