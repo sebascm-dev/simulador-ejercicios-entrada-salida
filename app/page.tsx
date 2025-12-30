@@ -10,18 +10,7 @@ import GitHubContributors from '@/components/GitHubContributors';
 import DiskGeometryCalculator from '@/components/DiskGeometryCalculator';
 import TimeAnalysis from '@/components/TimeAnalysis';
 
-const DevelopmentOverlay = ({ children }: { children: React.ReactNode }) => (
-  <div className="relative">
-    <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-lg border-2 border-dashed border-gray-300">
-      <span className="bg-white/90 px-4 py-2 rounded-full text-sm font-semibold text-gray-600 shadow-sm border border-gray-200 pointer-events-none select-none">
-        Desarrollando...
-      </span>
-    </div>
-    <div className="opacity-40 pointer-events-none select-none filter blur-[1px]">
-      {children}
-    </div>
-  </div>
-);
+
 
 export default function Home() {
   const [algorithm, setAlgorithm] = useState<Algorithm>('SSTF');
@@ -331,12 +320,10 @@ export default function Home() {
                 </div>
 
                 {/* Time Analysis Component */}
-                <DevelopmentOverlay>
-                  <TimeAnalysis
-                    totalTracksMoved={result ? result.totalTracks : 0}
-                    totalRequests={result ? arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0) : 0}
-                  />
-                </DevelopmentOverlay>
+                <TimeAnalysis
+                  totalTracksMoved={result ? result.totalTracks : 0}
+                  totalRequests={result ? arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0) : 0}
+                />
               </>
             )}
 
