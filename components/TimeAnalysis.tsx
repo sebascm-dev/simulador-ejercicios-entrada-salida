@@ -65,97 +65,83 @@ export default function TimeAnalysis({ totalTracksMoved, totalRequests }: TimeAn
     };
 
     return (
-        <InputSection title="Análisis de Tiempos (Compacto)">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* INPUTS COLUMN */}
-                <div className="space-y-4">
-                    <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        Parámetros del Disco
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <InputGroup
-                            label="T. Búsqueda (ms/pista)"
-                            value={seekTimeStr}
-                            onChange={setSeekTimeStr}
-                            placeholder="ej: 1.5"
-                        />
-                        <InputGroup
-                            label="RPM"
-                            value={rpmStr}
-                            onChange={setRpmStr}
-                            placeholder="ej: 7200"
-                        />
-                        <InputGroup
-                            label="Sectores / Pista"
-                            value={sectorsPerTrackStr}
-                            onChange={setSectorsPerTrackStr}
-                            placeholder="ej: 64"
-                        />
-                        <InputGroup
-                            label="Sectores / Bloque"
-                            value={sectorsPerBlockStr}
-                            onChange={setSectorsPerTrackBlockStr}
-                            placeholder="ej: 8"
-                        />
-                    </div>
-
-                    <div className="text-xs text-gray-400 space-y-1 mt-2 bg-gray-50 p-2 rounded border border-gray-100 italic">
-                        <p>Pistas Movidas (Simulación): <span className="font-semibold text-gray-600">{totalTracksMoved}</span></p>
-                        <p>Nº Peticiones (Simulación): <span className="font-semibold text-gray-600">{totalRequests}</span></p>
-                    </div>
+        <InputSection title="Análisis de Tiempos Físicos">
+            <div className="space-y-4">
+                {/* Inputs Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <InputGroup
+                        label="T. Búsqueda (ms)"
+                        value={seekTimeStr}
+                        onChange={setSeekTimeStr}
+                        placeholder="ej: 1.5"
+                    />
+                    <InputGroup
+                        label="RPM"
+                        value={rpmStr}
+                        onChange={setRpmStr}
+                        placeholder="ej: 7200"
+                    />
+                    <InputGroup
+                        label="Sectores / Pista"
+                        value={sectorsPerTrackStr}
+                        onChange={setSectorsPerTrackStr}
+                        placeholder="ej: 64"
+                    />
+                    <InputGroup
+                        label="Sectores / Bloque"
+                        value={sectorsPerBlockStr}
+                        onChange={setSectorsPerTrackBlockStr}
+                        placeholder="ej: 8"
+                    />
                 </div>
 
-                {/* RESULTS COLUMN */}
-                <div className="flex flex-col h-full">
-                    <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-2 mb-4">
-                        Resultados y Fórmulas
-                    </h4>
-
+                {/* Results Row */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                     {result ? (
-                        <div className="flex-1 space-y-4">
-                            {/* SEEK */}
-                            <ResultItem
-                                label="Tiempo de Búsqueda"
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+                            <CompactResultItem
+                                label="Búsqueda"
                                 value={result.seekTime}
-                                formula={`= PistasMovidas (${totalTracksMoved}) × TBúsqueda (${seekTimeStr})`}
                                 colorClass="text-blue-600"
                             />
-
-                            {/* LATENCY */}
-                            <ResultItem
-                                label="Tiempo de Latencia Total"
+                            <CompactResultItem
+                                label="Latencia"
                                 value={result.latencyTime}
-                                formula={`= Peticiones (${totalRequests}) × (60000 / RPM / 2)`}
                                 colorClass="text-purple-600"
                             />
-
-                            {/* TRANSFER */}
-                            <ResultItem
-                                label="Tiempo de Transferencia"
+                            <CompactResultItem
+                                label="Transferencia"
                                 value={result.transferTime}
-                                formula={`= Peticiones (${totalRequests}) × [(SectBloque / SectPista) × (60000/RPM)]`}
                                 colorClass="text-amber-600"
                             />
 
-                            <div className="border-t-2 border-gray-200 my-2 pt-2">
-                                <div className="flex justify-between items-end">
-                                    <span className="text-gray-700 font-bold">Tiempo Total</span>
-                                    <span className="text-2xl font-bold text-green-600">{formatTime(result.totalTime)} ms</span>
-                                </div>
-                                <p className="text-xs text-right text-gray-400 mt-1">= Búsqueda + Latencia + Transferencia</p>
+                            <div className="text-right border-t md:border-t-0 md:border-l border-gray-100 pt-2 md:pt-0 md:pl-6">
+                                <span className="block text-xs text-gray-400 uppercase font-bold">Tiempo Total</span>
+                                <span className="block text-2xl font-bold text-green-600 leading-none">
+                                    {formatTime(result.totalTime)} <span className="text-base font-normal text-gray-500">ms</span>
+                                </span>
                             </div>
-
                         </div>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm italic border-2 border-dashed border-gray-100 rounded-lg">
-                            Introduce todos los parámetros para calcular
+                        <div className="text-center text-gray-400 text-sm italic py-2">
+                            Introduce los parámetros físicos para calcular los tiempos reales
                         </div>
                     )}
                 </div>
             </div>
         </InputSection>
     );
+}
+
+function CompactResultItem({ label, value, colorClass }: { label: string, value: number, colorClass: string }) {
+    return (
+        <div>
+            <span className="block text-xs text-gray-500 uppercase font-semibold mb-1">{label}</span>
+            <span className={`text-lg font-bold ${colorClass}`}>
+                {value.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-xs text-gray-400 font-normal">ms</span>
+            </span>
+        </div>
+    )
 }
 
 function InputGroup({ label, value, onChange, placeholder }: { label: string, value: string, onChange: (v: string) => void, placeholder: string }) {
@@ -172,18 +158,4 @@ function InputGroup({ label, value, onChange, placeholder }: { label: string, va
             />
         </div>
     );
-}
-
-function ResultItem({ label, value, formula, colorClass }: { label: string, value: number, formula: string, colorClass: string }) {
-    return (
-        <div className="bg-white rounded border border-gray-100 p-2 shadow-sm">
-            <div className="flex justify-between items-baseline mb-1">
-                <span className="text-sm font-semibold text-gray-700">{label}</span>
-                <span className={`font-bold ${colorClass}`}>{value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ms</span>
-            </div>
-            <div className="text-[10px] text-gray-400 font-mono tracking-tight bg-gray-50 px-1 rounded inline-block">
-                {formula}
-            </div>
-        </div>
-    )
 }
