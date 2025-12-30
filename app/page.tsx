@@ -304,17 +304,37 @@ export default function Home() {
                     Resultados
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Secuencia:</span>
-                      <span className="font-semibold text-gray-900">
-                        {initialTrack} → {result.sequence.join(' → ')}
-                      </span>
+                    <div className="mb-4">
+                      <span className="text-xs text-gray-500 uppercase font-bold mb-1 block">Secuencia de Atención</span>
+                      <div className="bg-gray-50 px-3 py-2 rounded border border-gray-100 text-sm text-gray-800 font-medium break-words leading-relaxed shadow-inner">
+                        <span className="text-primary-700">{initialTrack}</span>
+                        {result.sequence.map((track: number, i: number) => (
+                          <span key={i}>
+                            <span className="text-gray-400 mx-1">→</span>
+                            {track}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total de pistas:</span>
-                      <span className="font-bold text-primary-600 text-lg">
-                        {result.totalTracks}
-                      </span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div className="bg-gray-50 p-3 rounded-md text-center">
+                        <span className="block text-xs text-gray-500 uppercase font-bold">Total Pistas</span>
+                        <span className="text-xl font-bold text-primary-600">{result.totalTracks}</span>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-md text-center">
+                        <span className="block text-xs text-gray-500 uppercase font-bold">Instante Fin</span>
+                        <span className="text-xl font-bold text-primary-600">
+                          {result.totalTime !== undefined ? result.totalTime.toFixed(1) : '-'}
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-md text-center">
+                        <span className="block text-xs text-gray-500 uppercase font-bold">Media Pistas/Pet.</span>
+                        <span className="text-xl font-bold text-primary-600">
+                          {arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0) > 0
+                            ? (result.totalTracks / arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0)).toFixed(2)
+                            : 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
