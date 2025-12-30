@@ -859,49 +859,65 @@ export function calculateFLOOK(
   timePerTrack: number = 1,
   timePerRequest: number = 0
 ): AlgorithmResult {
-  // F-LOOK (FSCAN/LOOK combination? o simplemente interrupciones congeladas?)
-  // Normalmente F-SCAN usa dos colas. MIENTRAS procesa una cola, las nuevas van a la otra.
-  // No hay "Intercepción dinámica" de la cola actual con cosas nuevas.
-  // "F-LOOK": Congelar la cola activa. Procesar todo LOOK sobre ella. Luego swap.
-
   const sequence: number[] = [];
   const steps: AlgorithmStep[] = [];
+
   let currentTrack = initialTrack;
   let currentTime = 0;
   let goingUp = direction === 'asc';
 
   let pendingArchive: DiskRequest[] = [...requests].sort((a, b) => (a.arrivalTime || 0) - (b.arrivalTime || 0));
+  let bufferQueue: DiskRequest[] = []; // Cola de espera para el siguiente ciclo
+  let activeQueue: DiskRequest[] = []; // Cola congelada actual
 
-  while (pendingArchive.length > 0) {
-    // Cargar TODO lo que haya llegado hasta ahora a la cola activa
-    // Si no hay nada, avanzar tiempo hasta la primera llegada
-    let activeQueue: DiskRequest[] = [];
+  while (activeQueue.length > 0 || bufferQueue.length > 0 || pendingArchive.length > 0) {
 
-    // Filtramos las que ya llegaron
-    const arrived = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+    // 1. Fase de Carga (Freeze)
+    if (activeQueue.length === 0) {
+      // Mover todo el buffer a la cola activa
+      if (bufferQueue.length > 0) {
+        activeQueue = [...bufferQueue];
+        bufferQueue = [];
+      }
 
-    if (arrived.length === 0) {
-      // Nada ha llegado, avanzar reloj
-      if (pendingArchive.length > 0) {
-        currentTime = pendingArchive[0].arrivalTime || 0;
-        continue;
-      } else {
+      // Además, checkear si hay cosas nuevas en pendingArchive que han llegado YA (o si todo estaba vacío, saltar tiempo)
+      // Si buffer estaba vacío, quizás necesitamos saltar tiempo.
+      // Si buffer tenía cosas, igual cargamos lo que haya llegado hasta ahora para completar el lote freeze.
+
+      // Chequeo de tiempo si todo está vacío
+      if (activeQueue.length === 0 && pendingArchive.length > 0) {
+        const nextArrival = pendingArchive[0].arrivalTime || 0;
+        if (currentTime < nextArrival) {
+          currentTime = nextArrival;
+        }
+      }
+
+      // Cargar nuevas llegadas
+      const available = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+      if (available.length > 0) {
+        activeQueue.push(...available);
+        pendingArchive = pendingArchive.filter(r => !available.includes(r));
+      }
+
+      if (activeQueue.length === 0) {
+        // Nada disponible ni en buffer ni llegó nada.
         break;
       }
     }
 
-    // Mover de pending a active
-    activeQueue = arrived;
-    pendingArchive = pendingArchive.filter(r => !arrived.includes(r));
-
-    // AHORA procesar activeQueue con lógica LOOK completa (sin admitir nuevas en MEDIO)
-    // "Freeze" strategy
+    // 2. Procesar Cola Activa (LOOK Strategy)
+    // Ordenar inicialmente según dirección? No, LOOK busca aleatoriamente según dirección.
 
     while (activeQueue.length > 0) {
-      let targetTrack: number | null = null;
-      // let targetIndex = -1; // This variable is not used and can be removed.
 
-      // 0. Prioridad absoluta: Si hay una petición en la posición actual, atiéndela.
+      // Antes de mover, checkear llegadas para el BUFFER (visualización correcta)
+      const newArrivals = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+      if (newArrivals.length > 0) {
+        bufferQueue.push(...newArrivals);
+        pendingArchive = pendingArchive.filter(r => !newArrivals.includes(r));
+      }
+
+      // Lógica Prioritaria: Si estamos encima de una petición, atenderla.
       const atCurrent = activeQueue.find(r => r.track === currentTrack);
       if (atCurrent) {
         steps.push({
@@ -909,6 +925,7 @@ export function calculateFLOOK(
           to: currentTrack,
           distance: 0,
           remaining: activeQueue.map(r => r.track),
+          buffer: bufferQueue.map(r => r.track),
           instant: currentTime,
           arrivalInstant: atCurrent.arrivalTime,
         });
@@ -918,27 +935,47 @@ export function calculateFLOOK(
         continue;
       }
 
+      // Buscar siguiente objetivo según dirección (LOOK)
+      let targetTrack: number | null = null;
+      let targetRequest: DiskRequest | null = null;
+
       if (goingUp) {
-        const above = activeQueue.map((r, i) => ({ r, i })).filter(x => x.r.track > currentTrack).sort((a, b) => a.r.track - b.r.track);
+        // Buscar hacia arriba
+        const above = activeQueue.filter(r => r.track > currentTrack).sort((a, b) => a.track - b.track);
         if (above.length > 0) {
-          targetTrack = above[0].r.track;
-          // targetIndex = above[0].i; // Ojo, el índice original en activeQueue puede no ser este
-          // Mejor buscar por objeto
+          targetRequest = above[0];
+          targetTrack = targetRequest.track;
         } else {
+          // Cambiar dirección
           goingUp = false;
           continue;
         }
       } else {
-        const below = activeQueue.map((r, i) => ({ r, i })).filter(x => x.r.track < currentTrack).sort((a, b) => b.r.track - a.r.track);
+        // Buscar hacia abajo
+        const below = activeQueue.filter(r => r.track < currentTrack).sort((a, b) => b.track - a.track);
         if (below.length > 0) {
-          targetTrack = below[0].r.track;
+          targetRequest = below[0];
+          targetTrack = targetRequest.track;
         } else {
+          // Cambiar dirección
           goingUp = true;
           continue;
         }
       }
 
-      const targetReq = activeQueue.find(r => r.track === targetTrack)!;
+      // Mover cabeza
+      // Nota: En F-LOOK la cola activa es fija, no hay intercepciones nuevas que entren en active.
+      // Solo intercepciones de la PROPIA activeQueue?
+      // Sí, si voy a 100 y paso por 50 que también está en activeQueue, debería parar?
+      // LOOK normal sí lo hace. Nuestro activeQueue tiene TODO el lote.
+      // Hemos seleccionado 'targetRequest' como la MÁS CERCANA en esa dirección.
+      // (Sort by track difference).
+      // Así que NO debería haber nadie en medio del activeQueue.
+      // Ejemplo: Current 10. Active [100, 50]. Going Up.
+      // Filter > 10 -> [100, 50]. Sort a-b -> [50, 100].
+      // Target es 50. No hay nadie entre 10 y 50.
+      // Así que movimiento directo es seguro.
+
       const distance = Math.abs(targetTrack - currentTrack);
       const moveTime = distance * timePerTrack;
 
@@ -947,18 +984,25 @@ export function calculateFLOOK(
         to: targetTrack,
         distance,
         remaining: activeQueue.map(r => r.track),
+        buffer: bufferQueue.map(r => r.track),
         instant: currentTime,
-        arrivalInstant: targetReq.arrivalTime
+        arrivalInstant: targetRequest.arrivalTime
       });
 
       sequence.push(targetTrack);
       currentTrack = targetTrack;
       currentTime += moveTime;
 
-      // Sumar tiempo de servicio
+      // Checkear llegadas durante el movimiento
+      const arrivalsDuringMove = pendingArchive.filter(r => (r.arrivalTime || 0) <= currentTime);
+      if (arrivalsDuringMove.length > 0) {
+        bufferQueue.push(...arrivalsDuringMove);
+        pendingArchive = pendingArchive.filter(r => !arrivalsDuringMove.includes(r));
+      }
+
       currentTime += timePerRequest;
 
-      activeQueue = activeQueue.filter(r => r !== targetReq);
+      activeQueue = activeQueue.filter(r => r !== targetRequest);
     }
   }
 

@@ -194,7 +194,18 @@ export default function TrackVisualization({
   }
 
   const minY = minTrack;
-  const maxY = maxTrack;
+
+  // Calculate effective max Y to ensure graph doesn't flatten if user inputs invalid maxTrack (e.g. 0)
+  // or if visited tracks exceed the configured max.
+  const maxVisitedTrack = useMemo(() => {
+    if (steps.length === 0) return initialTrack;
+    return Math.max(initialTrack, ...steps.map(s => s.to));
+  }, [steps, initialTrack]);
+
+  // If configured maxTrack is 0 (likely user error) or less than visited tracks, use maxVisited.
+  // Add a small buffer if range is 0 to avoid Recharts issues.
+  let maxY = Math.max(maxTrack, maxVisitedTrack);
+  if (maxY <= minY) maxY = minY + 10;
 
   const CustomDot = (props: any) => {
     const { cx, cy, payload } = props;
