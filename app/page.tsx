@@ -26,9 +26,7 @@ const DevelopmentOverlay = ({ children }: { children: React.ReactNode }) => (
 export default function Home() {
   const [algorithm, setAlgorithm] = useState<Algorithm>('SSTF');
   const [initialTrack, setInitialTrack] = useState<number | ''>(0);
-  const [requests, setRequests] = useState<string>('');
   const [arrivalInstances, setArrivalInstances] = useState<ArrivalInstance[]>([]);
-  const [useArrivalInstances, setUseArrivalInstances] = useState<boolean>(false);
   const [minTrack, setMinTrack] = useState<number | ''>(0);
   const [maxTrack, setMaxTrack] = useState<number | ''>(0);
   const [nStep, setNStep] = useState<number | ''>(2); // N para SCAN-N
@@ -37,43 +35,34 @@ export default function Home() {
 
   const handleCalculate = () => {
     try {
-      let requestArray: number[] = [];
       let diskRequests: DiskRequest[] = [];
 
-      if (useArrivalInstances && arrivalInstances.length > 0) {
-        // Usar instantes de llegada
+      // Usar siempre instantes de llegada (Unified Input)
+      if (arrivalInstances.length > 0) {
         diskRequests = arrivalInstances.flatMap(instance =>
           instance.tracks.map(track => ({
             track,
             arrivalTime: instance.instant,
           }))
         );
-        requestArray = diskRequests.map(r => r.track);
       } else {
-        // Usar modo simple (solo peticiones)
-        if (!requests.trim()) {
-          alert('Por favor ingrese las peticiones de pistas');
-          return;
-        }
-        requestArray = requests
-          .split(',')
-          .map(s => parseInt(s.trim()))
-          .filter(n => !isNaN(n));
+        alert('Por favor añada al menos un instante de llegada con pistas');
+        return;
       }
+
+      const requestArray = diskRequests.map(r => r.track);
 
       if (requestArray.length === 0) {
         alert('Por favor ingrese al menos una petición válida');
         return;
       }
 
-      // Validar que no haya pistas duplicadas en el mismo instante
-      if (useArrivalInstances && arrivalInstances.length > 0) {
-        const duplicates = diskRequests.filter((req, index) =>
-          diskRequests.findIndex(r => r.track === req.track && r.arrivalTime === req.arrivalTime) !== index
-        );
-        if (duplicates.length > 0) {
-          console.warn('Hay peticiones duplicadas:', duplicates);
-        }
+      // Validar duplicados exactos (track y tiempo)
+      const duplicates = diskRequests.filter((req, index) =>
+        diskRequests.findIndex(r => r.track === req.track && r.arrivalTime === req.arrivalTime) !== index
+      );
+      if (duplicates.length > 0) {
+        console.warn('Hay peticiones duplicadas:', duplicates);
       }
 
       let algorithmResult;
@@ -83,16 +72,8 @@ export default function Home() {
       const safeMaxTrack = maxTrack === '' ? 0 : maxTrack;
       const safeNStep = nStep === '' ? 2 : nStep;
 
-      // Todos los algoritmos ahora soportan tiempos de llegada y service time (se pasan 0 para compatibilidad)
-      if (useArrivalInstances && arrivalInstances.length > 0) {
-        algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, diskRequests, safeMaxTrack, direction, 0, 0, safeMinTrack, safeNStep);
-      } else {
-        const defaultRequests: DiskRequest[] = requestArray.map(track => ({
-          track,
-          arrivalTime: 0,
-        }));
-        algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, defaultRequests, safeMaxTrack, direction, 0, 0, safeMinTrack, safeNStep);
-      }
+      // Calcular siempre pasando los diskRequests
+      algorithmResult = calculateAlgorithm(algorithm, safeInitialTrack, diskRequests, safeMaxTrack, direction, 0, 0, safeMinTrack, safeNStep);
 
       setResult(algorithmResult);
     } catch (error: any) {
@@ -103,9 +84,9 @@ export default function Home() {
   const handleReset = () => {
     setAlgorithm('SSTF');
     setInitialTrack(0);
-    setRequests('');
+    /* setRequests(''); */
     setArrivalInstances([]);
-    setUseArrivalInstances(false);
+    /* setUseArrivalInstances(false); */
     setMinTrack(0);
     setMaxTrack(0);
     setNStep(2);
@@ -201,42 +182,10 @@ export default function Home() {
                   />
                 </div>
 
-                <div>
-                  <label className="flex items-center gap-2 mb-3">
-                    <input
-                      type="checkbox"
-                      checked={useArrivalInstances}
-                      onChange={(e) => setUseArrivalInstances(e.target.checked)}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      Usar instantes de llegada (para F-LOOK y algoritmos con tiempos)
-                    </span>
-                  </label>
-                </div>
-
-                {useArrivalInstances ? (
-                  <ArrivalTimeInput
-                    instances={arrivalInstances}
-                    onChange={setArrivalInstances}
-                  />
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Peticiones de Pistas (separadas por comas)
-                    </label>
-                    <input
-                      type="text"
-                      value={requests}
-                      onChange={(e) => setRequests(e.target.value)}
-                      placeholder="Ej: 754, 433, 285, 176, 667, 827"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Para usar tiempos de llegada, active la opción de arriba
-                    </p>
-                  </div>
-                )}
+                <ArrivalTimeInput
+                  instances={arrivalInstances}
+                  onChange={setArrivalInstances}
+                />
 
 
                 <div className="grid grid-cols-2 gap-4">
@@ -346,7 +295,7 @@ export default function Home() {
                 <DevelopmentOverlay>
                   <TimeAnalysis
                     totalTracksMoved={result ? result.totalTracks : 0}
-                    totalRequests={result ? (useArrivalInstances ? arrivalInstances.length : requests.split(',').filter(x => x.trim()).length) : 0}
+                    totalRequests={result ? arrivalInstances.reduce((acc, inst) => acc + inst.tracks.length, 0) : 0}
                   />
                 </DevelopmentOverlay>
               </>

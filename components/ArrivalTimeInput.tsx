@@ -19,15 +19,13 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
 
   const handleAddInstance = () => {
     // Basic validation
-    if (currentInstantStr.trim() === '') {
-      alert('Por favor ingrese un instante de llegada');
-      return;
-    }
-
-    const instantVal = parseFloat(currentInstantStr);
-    if (isNaN(instantVal)) {
-      alert('El instante de llegada debe ser un número válido');
-      return;
+    let instantVal = 0;
+    if (currentInstantStr.trim() !== '') {
+      instantVal = parseFloat(currentInstantStr);
+      if (isNaN(instantVal)) {
+        alert('El instante de llegada debe ser un número válido');
+        return;
+      }
     }
 
     const tracksArray = currentTracks
@@ -120,7 +118,7 @@ export default function ArrivalTimeInput({ instances, onChange }: ArrivalTimeInp
               value={currentInstantStr}
               onChange={(e) => setCurrentInstantStr(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="ej: 0.5"
+              placeholder="0 (predeterminado)"
             />
           </div>
           <div className="md:col-span-2">

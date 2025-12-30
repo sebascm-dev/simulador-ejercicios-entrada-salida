@@ -59,6 +59,12 @@ function findEarliestIntercept(
 
     // Si la petición llega antes o justo al mismo tiempo que la cabeza pasa por ahí
     if ((req.arrivalTime || 0) <= arrivalTimeAtTrack) {
+      // Preventing infinite loop: if intercept track IS the current track,
+      // and we haven't consumed it yet, we should return it ONLY if it's the target itself (which is handled by main loop)
+      // or if it really intercepts.
+      // Actually, if track == currentTrack, distance is 0.
+      // If we return it as intercept, the main loop sets nextTrack = currentTrack, distance = 0.
+      // Then it MUST consume it.
       return { interceptTrack: req.track, request: req };
     }
   }
@@ -217,12 +223,31 @@ export function calculateSCAN(
 
     if (activeQueue.length === 0) break;
 
+    // 0. Prioridad absoluta: Si hay una petición en la posición actual en la cola activa, atiéndela YA.
+    // Esto evita bucles de "moverse a sí mismo" o problemas con intercepciones de distancia 0.
+    const atCurrent = activeQueue.find(r => r.track === currentTrack);
+    if (atCurrent) {
+      steps.push({
+        from: currentTrack,
+        to: currentTrack,
+        distance: 0,
+        remaining: activeQueue.map(r => r.track),
+        instant: currentTime,
+        arrivalInstant: atCurrent.arrivalTime,
+      });
+      sequence.push(currentTrack);
+      currentTime += timePerRequest;
+      activeQueue = activeQueue.filter(r => r !== atCurrent);
+      remaining = remaining.filter(r => r !== atCurrent);
+      continue;
+    }
+
     let targetTrack: number | null = null;
     let targetRequest: DiskRequest | null = null;
     let isEdgeMove = false;
 
     if (goingUp) {
-      const above = activeQueue.filter(r => r.track >= currentTrack).sort((a, b) => a.track - b.track);
+      const above = activeQueue.filter(r => r.track > currentTrack).sort((a, b) => a.track - b.track);
       if (above.length > 0) {
         targetRequest = above[0];
         targetTrack = targetRequest.track;
@@ -231,7 +256,7 @@ export function calculateSCAN(
         isEdgeMove = true;
       }
     } else {
-      const below = activeQueue.filter(r => r.track <= currentTrack).sort((a, b) => b.track - a.track);
+      const below = activeQueue.filter(r => r.track < currentTrack).sort((a, b) => b.track - a.track);
       if (below.length > 0) {
         targetRequest = below[0];
         targetTrack = targetRequest.track;
@@ -258,11 +283,11 @@ export function calculateSCAN(
       goingUp ? 'asc' : 'desc'
     );
 
-    // Si es movimiento de borde, también considerar intercepciones
-
     if (intercept) {
+      // Verificar si la intercepción es válida (está estrictamente en el camino)
+      // findEarliestIntercept ya debería garantizar esto, pero doble seguridad
       actualDest = intercept.interceptTrack;
-      isEdgeMove = false; // Ya no llegamos al borde (todavía)
+      isEdgeMove = false;
     }
 
     const distance = Math.abs(actualDest - currentTrack);
@@ -458,8 +483,26 @@ export function calculateCSCAN(
     let targetRequest: DiskRequest | null = null;
     let isWrapAround = false;
 
+    // 0. Prioridad absoluta
+    const atCurrent = activeQueue.find(r => r.track === currentTrack);
+    if (atCurrent) {
+      steps.push({
+        from: currentTrack,
+        to: currentTrack,
+        distance: 0,
+        remaining: activeQueue.map(r => r.track),
+        instant: currentTime,
+        arrivalInstant: atCurrent.arrivalTime,
+      });
+      sequence.push(currentTrack);
+      currentTime += timePerRequest;
+      activeQueue = activeQueue.filter(r => r !== atCurrent);
+      continue;
+    }
+
+
     if (goingUp) {
-      const above = activeQueue.filter(r => r.track >= currentTrack).sort((a, b) => a.track - b.track);
+      const above = activeQueue.filter(r => r.track > currentTrack).sort((a, b) => a.track - b.track);
       if (above.length > 0) {
         targetRequest = above[0];
         targetTrack = targetRequest.track;
@@ -469,7 +512,7 @@ export function calculateCSCAN(
         isWrapAround = true;
       }
     } else {
-      const below = activeQueue.filter(r => r.track <= currentTrack).sort((a, b) => b.track - a.track);
+      const below = activeQueue.filter(r => r.track < currentTrack).sort((a, b) => b.track - a.track);
       if (below.length > 0) {
         targetRequest = below[0];
         targetTrack = targetRequest.track;
@@ -653,8 +696,25 @@ export function calculateFLOOK(
       let targetTrack: number | null = null;
       // let targetIndex = -1; // This variable is not used and can be removed.
 
+      // 0. Prioridad absoluta: Si hay una petición en la posición actual, atiéndela.
+      const atCurrent = activeQueue.find(r => r.track === currentTrack);
+      if (atCurrent) {
+        steps.push({
+          from: currentTrack,
+          to: currentTrack,
+          distance: 0,
+          remaining: activeQueue.map(r => r.track),
+          instant: currentTime,
+          arrivalInstant: atCurrent.arrivalTime,
+        });
+        sequence.push(currentTrack);
+        currentTime += timePerRequest;
+        activeQueue = activeQueue.filter(r => r !== atCurrent);
+        continue;
+      }
+
       if (goingUp) {
-        const above = activeQueue.map((r, i) => ({ r, i })).filter(x => x.r.track >= currentTrack).sort((a, b) => a.r.track - b.r.track);
+        const above = activeQueue.map((r, i) => ({ r, i })).filter(x => x.r.track > currentTrack).sort((a, b) => a.r.track - b.r.track);
         if (above.length > 0) {
           targetTrack = above[0].r.track;
           // targetIndex = above[0].i; // Ojo, el índice original en activeQueue puede no ser este
@@ -664,7 +724,7 @@ export function calculateFLOOK(
           continue;
         }
       } else {
-        const below = activeQueue.map((r, i) => ({ r, i })).filter(x => x.r.track <= currentTrack).sort((a, b) => b.r.track - a.r.track);
+        const below = activeQueue.map((r, i) => ({ r, i })).filter(x => x.r.track < currentTrack).sort((a, b) => b.r.track - a.r.track);
         if (below.length > 0) {
           targetTrack = below[0].r.track;
         } else {
