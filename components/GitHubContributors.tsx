@@ -90,7 +90,7 @@ const GitHubContributors: React.FC = () => {
             {mainAuthor && (
                 <div className="flex flex-col items-center mb-6 animate-fade-in-up">
                     <p className="text-gray-500 text-sm mb-4 font-medium">
-                        Hecho por <span className="font-bold text-gray-800">Sebastián Contreras Marín</span>
+                        Proyecto realizado por:
                     </p>
                     <a
                         href={mainAuthor.html_url}
