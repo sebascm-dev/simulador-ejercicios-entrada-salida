@@ -8,6 +8,7 @@ import ResultTable from '@/components/ResultTable';
 import TrackVisualization from '@/components/TrackVisualization';
 import ArrivalTimeInput, { ArrivalInstance } from '@/components/ArrivalTimeInput';
 import GitHubContributors from '@/components/GitHubContributors';
+import DiskGeometryCalculator from '@/components/DiskGeometryCalculator';
 
 const DevelopmentOverlay = ({ children }: { children: React.ReactNode }) => (
   <div className="relative">
@@ -385,6 +386,8 @@ export default function Home() {
                 </div>
               </div>
             </InputSection>
+
+            <DiskGeometryCalculator />
 
             <DevelopmentOverlay>
               <InputSection title="Especificaciones del Disco (para cálculos de tiempo)">
