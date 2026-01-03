@@ -161,10 +161,11 @@ export default function Home() {
                     <option value="LOOK">LOOK</option>
                     <option value="C-LOOK">C-LOOK (Circular LOOK)</option>
                     <option value="F-LOOK">F-LOOK</option>
+                    <option value="LOOK-N">LOOK-N (N-step LOOK)</option>
                   </select>
                 </div>
 
-                {algorithm === 'SCAN-N' && (
+                {(algorithm === 'SCAN-N' || algorithm === 'LOOK-N') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       N (Tamaño del paso)

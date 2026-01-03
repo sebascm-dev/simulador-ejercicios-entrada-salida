@@ -1,4 +1,4 @@
-export type Algorithm = 'SSTF' | 'SCAN' | 'LOOK' | 'C-SCAN' | 'F-LOOK' | 'SCAN-N' | 'C-LOOK' | 'F-SCAN';
+export type Algorithm = 'SSTF' | 'SCAN' | 'LOOK' | 'C-SCAN' | 'F-LOOK' | 'SCAN-N' | 'C-LOOK' | 'F-SCAN' | 'LOOK-N';
 
 export interface DiskRequest {
   track: number;
@@ -1366,6 +1366,191 @@ export function calculateCLOOK(
   return { sequence, totalTracks, steps, totalTime: currentTime };
 }
 
+export function calculateLOOKN(
+  initialTrack: number,
+  requests: number[] | DiskRequest[],
+  nStep: number,
+  direction: 'asc' | 'desc' = 'asc',
+  timePerTrack: number = 1,
+  timePerRequest: number = 0
+): AlgorithmResult {
+  const sequence: number[] = [];
+  const steps: AlgorithmStep[] = [];
+  let currentTrack = initialTrack;
+  let currentTime = 0;
+
+  // Unlike SCAN-N, LOOK-N doesn't force going to edges, but it respects the N-step batching.
+  // Direction strategy: "LOOK" style within the batch.
+  // "Si tu dirección actual es “hacia pistas más altas”, atiendes primero las peticiones de A por encima... hasta la última; luego cambias de sentido..."
+  // This implies we default to 'asc' or whatever the current head direction is.
+  let goingUp = direction === 'asc';
+
+  const diskRequests: DiskRequest[] = Array.isArray(requests) && requests.length > 0
+    ? (typeof requests[0] === 'number'
+      ? requests.map(track => ({ track: track as number, arrivalTime: 0 }))
+      : requests as DiskRequest[])
+    : [];
+
+  let pendingQueue: DiskRequest[] = [...diskRequests].sort((a, b) => (a.arrivalTime || 0) - (b.arrivalTime || 0));
+  let activeQueue: DiskRequest[] = [];
+
+  // We need to know what was processed to remove from pending/active logic cleanly?
+  // Actually, we can just consume from pendingQueue into activeQueue.
+
+  while (activeQueue.length > 0 || pendingQueue.length > 0) {
+    // 1. Fill Phase: If active is empty, fill it with N requests from pending
+    // Important: We only take requests that have arrived by `currentTime`?
+    // The prompt says: "tomas de la cola global hasta N peticiones (normalmente en orden de llegada)".
+    // Standard N-Step usually waits if queue is empty until something arrives.
+
+    if (activeQueue.length === 0) {
+      if (pendingQueue.length === 0) break; // All done
+
+      // Check if any request has arrived
+      const nextArrival = pendingQueue[0].arrivalTime || 0;
+      if (currentTime < nextArrival) {
+        currentTime = nextArrival;
+      }
+
+      // Get all available requests up to N
+      // Note: Strict N-Step might take strictly the next N regardless of time if we assume they are already known?
+      // But in a real OS, only arrived requests are known.
+      // Prompt says: "tomas de la cola global hasta N peticiones".
+      // Let's take up to N from those that have arrived <= currentTime.
+      // If 0 arrived (but we jumped time above), at least 1 is available.
+
+      const available = pendingQueue.filter(r => (r.arrivalTime || 0) <= currentTime);
+      // Sort by arrival time to be fair (FIFO for the batch selection)
+      available.sort((a, b) => (a.arrivalTime || 0) - (b.arrivalTime || 0));
+
+      const batch = available.slice(0, nStep);
+
+      if (batch.length === 0) {
+        // Should not happen if we updated currentTime, unless pendingQueue was empty (checked).
+        // Maybe all pending are in future?
+        // We already did currentTime = nextArrival.
+        // So at least pendingQueue[0] is available.
+        // Recalculate available just in case logic above was slightly off (e.g. filter issue)
+        const forcedBatch = pendingQueue.slice(0, nStep);
+        // If we force batch, we must update time to the latest arrival in that batch?
+        // No, the system works causally. We can only process what has arrived.
+        // If we advanced time to `nextArrival`, then `nextArrival` IS available.
+        activeQueue = [pendingQueue[0]];
+        // Try to fill the rest of N if they have same arrival time?
+        // Simply: Take pendingQueue[0], and any others <= its arrival time, up to N.
+        const first = pendingQueue[0];
+        currentTime = Math.max(currentTime, first.arrivalTime || 0);
+        pendingQueue.shift(); // Remove first
+        activeQueue.push(first);
+
+        // Fill remainder up to N from arrived
+        while (activeQueue.length < nStep && pendingQueue.length > 0) {
+          if ((pendingQueue[0].arrivalTime || 0) <= currentTime) {
+            activeQueue.push(pendingQueue.shift()!);
+          } else {
+            break;
+          }
+        }
+      } else {
+        // Normal case: we found some available
+        activeQueue = [...batch];
+        // Remove from pending
+        pendingQueue = pendingQueue.filter(r => !batch.includes(r));
+      }
+    }
+
+    // 2. Process Phase (LOOK on activeQueue)
+    // "Atiendes A con LOOK"
+    // While A is not empty
+    while (activeQueue.length > 0) {
+
+      // Check current track service
+      // (If multiple at current track, service all? LOOK usually does).
+      const atCurrent = activeQueue.filter(r => r.track === currentTrack);
+      if (atCurrent.length > 0) {
+        // Service all at current
+        for (const req of atCurrent) {
+          steps.push({
+            from: currentTrack,
+            to: currentTrack,
+            distance: 0,
+            remaining: activeQueue.map(r => r.track),
+            buffer: pendingQueue.filter(r => (r.arrivalTime || 0) <= currentTime).map(r => r.track),
+            instant: currentTime,
+            arrivalInstant: req.arrivalTime
+          });
+          sequence.push(currentTrack);
+          currentTime += timePerRequest;
+          activeQueue = activeQueue.filter(r => r !== req);
+        }
+        continue; // Re-evaluate loop
+      }
+
+      // Find target in current direction
+      let targetRequest: DiskRequest | null = null;
+      let targetTrack: number | null = null;
+
+      if (goingUp) {
+        const above = activeQueue.filter(r => r.track > currentTrack).sort((a, b) => a.track - b.track);
+        if (above.length > 0) {
+          targetRequest = above[0];
+          targetTrack = targetRequest.track;
+        } else {
+          // No more above, switch direction
+          // "luego cambias de sentido y atiendes las que quedan por debajo"
+          goingUp = false;
+          continue; // Re-evaluate with new direction
+        }
+      } else {
+        const below = activeQueue.filter(r => r.track < currentTrack).sort((a, b) => b.track - a.track);
+        if (below.length > 0) {
+          targetRequest = below[0];
+          targetTrack = targetRequest.track;
+        } else {
+          goingUp = true;
+          continue;
+        }
+      }
+
+      // LOOK-N: The activeQueue is "frozen" (no new requests enter A during this sweep).
+      // But do we intercept *other requests in A*?
+      // Yes, standard LOOK intercepts anything in the path.
+      // Since A is fixed, we can just check if any *other* request in A is on the way.
+      // We already sorted `above` / `below`.
+      // `targetRequest` is the NEAREST one in that direction.
+      // So we just go to `targetRequest`.
+      // Are there "intercepts"?
+      // Since we picked the standard "sorted closest in direction", there is NO INTERCEPT from A itself.
+      // (e.g. at 50, requests 60, 80. `above` is [60, 80]. Target is 60. 60 intercepts 80? No, 60 IS the target).
+
+      const distance = Math.abs(targetTrack - currentTrack);
+      const moveTime = distance * timePerTrack;
+
+      steps.push({
+        from: currentTrack,
+        to: targetTrack,
+        distance: distance,
+        remaining: activeQueue.map(r => r.track),
+        buffer: pendingQueue.filter(r => (r.arrivalTime || 0) <= currentTime).map(r => r.track),
+        instant: currentTime,
+        arrivalInstant: targetRequest.arrivalTime
+      });
+
+      sequence.push(targetTrack);
+      currentTrack = targetTrack;
+      currentTime += moveTime;
+      currentTime += timePerRequest;
+
+      activeQueue = activeQueue.filter(r => r !== targetRequest);
+    }
+    // End of Cycle: activeQueue is empty.
+    // Loop back to Fill Phase.
+  }
+
+  const totalTracks = steps.reduce((sum, step) => sum + step.distance, 0);
+  return { sequence, totalTracks, steps, totalTime: currentTime };
+}
+
 export function calculateAlgorithm(
   algorithm: Algorithm,
   initialTrack: number,
@@ -1394,6 +1579,8 @@ export function calculateAlgorithm(
       return calculateCLOOK(initialTrack, requests as DiskRequest[], direction, timePerTrack, timePerRequest);
     case 'F-SCAN':
       return calculateFSCAN(initialTrack, requests, maxTrack || 999, direction, timePerTrack, timePerRequest, minTrack);
+    case 'LOOK-N':
+      return calculateLOOKN(initialTrack, requests as DiskRequest[], nStep, direction, timePerTrack, timePerRequest);
     default:
       throw new Error(`Algoritmo desconocido: ${algorithm}`);
   }
