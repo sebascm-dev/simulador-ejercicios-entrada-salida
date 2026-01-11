@@ -528,18 +528,7 @@ export function calculateCSCAN(
     if (!isWrapAround) {
       // Movimiento normal de servicio
       let actualDest = targetTrack!;
-      let intercept = findEarliestIntercept(
-        currentTrack,
-        actualDest,
-        currentTime,
-        timePerTrack,
-        pendingQueue,
-        goingUp ? 'asc' : 'desc'
-      );
-
-      if (intercept) {
-        actualDest = intercept.interceptTrack;
-      }
+      // Intercepción eliminada para respetar la decisión inicial del paso
 
       const distance = Math.abs(actualDest - currentTrack);
       const moveTime = distance * timePerTrack;
@@ -550,7 +539,7 @@ export function calculateCSCAN(
         distance,
         remaining: activeQueue.map(r => r.track),
         instant: currentTime,
-        arrivalInstant: intercept ? intercept.request.arrivalTime : targetRequest!.arrivalTime
+        arrivalInstant: targetRequest!.arrivalTime
       });
 
       sequence.push(actualDest);
@@ -560,11 +549,7 @@ export function calculateCSCAN(
       // Sumar tiempo de servicio
       currentTime += timePerRequest;
 
-      if (intercept) {
-        pendingQueue = pendingQueue.filter(r => r !== intercept!.request);
-      } else {
-        activeQueue = activeQueue.filter(r => r !== targetRequest);
-      }
+      activeQueue = activeQueue.filter(r => r !== targetRequest);
 
     } else {
       // Estamos yendo al borde para saltar
@@ -575,73 +560,39 @@ export function calculateCSCAN(
       // C-SCAN estricto: atiende hasta el fin. 
       // Si hay pending requests que aparecen ANTES del maxTrack, se atienden.
 
-      let actualDest = targetTrack!;
-      let intercept = findEarliestIntercept(
-        currentTrack,
-        actualDest,
-        currentTime,
-        timePerTrack,
-        pendingQueue,
-        goingUp ? 'asc' : 'desc'
-      );
+      // Eliminada lógica de intercepción: decisión determinista al inicio del paso.
 
-      if (intercept) {
-        // Sorpresa, apareció algo en el camino al borde
-        actualDest = intercept.interceptTrack;
-        // Se atiende y seguimos en el loop normal
-        const distance = Math.abs(actualDest - currentTrack);
-        const moveTime = distance * timePerTrack;
+      // Llegamos al borde
+      const distance = Math.abs(targetTrack! - currentTrack);
+      const moveTime = distance * timePerTrack;
+      steps.push({
+        from: currentTrack,
+        to: targetTrack!,
+        distance,
+        remaining: activeQueue.map(r => r.track),
+        instant: currentTime
+      });
+      currentTrack = targetTrack!;
+      currentTime += moveTime;
 
-        steps.push({
-          from: currentTrack,
-          to: actualDest,
-          distance,
-          remaining: activeQueue.map(r => r.track),
-          instant: currentTime,
-          arrivalInstant: intercept.request.arrivalTime
-        });
-        sequence.push(actualDest);
-        currentTrack = actualDest;
-        currentTime += moveTime;
+      // NO se suma timePerRequest aquí porque solo llegamos al borde
 
-        // Sumar tiempo de servicio
-        currentTime += timePerRequest;
+      // AHORA el salto (The Wrap)
+      // El salto es instantáneo o cuenta distancia? "Circular jump". 
+      // Generalmente es un salto largo que no atiende nada.
+      const newStart = goingUp ? minTrack : maxTrack;
+      const jumpDist = Math.abs(newStart - currentTrack);
+      const jumpTime = jumpDist * timePerTrack;
 
-        pendingQueue = pendingQueue.filter(r => r !== intercept.request);
-        // No hacemos wrap aún
-      } else {
-        // Llegamos al borde
-        const distance = Math.abs(targetTrack! - currentTrack);
-        const moveTime = distance * timePerTrack;
-        steps.push({
-          from: currentTrack,
-          to: targetTrack!,
-          distance,
-          remaining: activeQueue.map(r => r.track),
-          instant: currentTime
-        });
-        currentTrack = targetTrack!;
-        currentTime += moveTime;
-
-        // NO se suma timePerRequest aquí porque solo llegamos al borde
-
-        // AHORA el salto (The Wrap)
-        // El salto es instantáneo o cuenta distancia? "Circular jump". 
-        // Generalmente es un salto largo que no atiende nada.
-        const newStart = goingUp ? minTrack : maxTrack;
-        const jumpDist = Math.abs(newStart - currentTrack);
-        const jumpTime = jumpDist * timePerTrack;
-
-        steps.push({
-          from: currentTrack,
-          to: newStart,
-          distance: jumpDist,
-          remaining: activeQueue.map(r => r.track),
-          instant: currentTime
-        });
-        currentTrack = newStart;
-        currentTime += jumpTime;
-      }
+      steps.push({
+        from: currentTrack,
+        to: newStart,
+        distance: jumpDist,
+        remaining: activeQueue.map(r => r.track),
+        instant: currentTime
+      });
+      currentTrack = newStart;
+      currentTime += jumpTime;
     }
   }
 
